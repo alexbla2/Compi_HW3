@@ -1,3 +1,9 @@
+%{
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include "parser.hpp"
+	#include "parser.tab.hpp"
+%}
 
 %option yylineno
 %option noyywrap
@@ -6,60 +12,62 @@ realop ("=="|"!="|"<"|">"|"<="|">=")
 binop ("+"|"-"|"*"|"/")
 id ([a-zA-Z][a-zA-Z0-9]*)
 num (0|[1-9][0-9]*)
-comment (//[^\r\n]*[\r|\n|\r\n]?
-
+comment ("//"[^\r\n]*[\r|\n|\r\n]?)
 whitespace ([\t\n ])
 newline 	(\r\n|\r|\n)
 
-%x string
-
 %%
 
-"void" return VOID;
-"int" return INT;
-"byte" return BYTE;
-"b" return B;
-"bool" return BOOL;
-"and" return AND;
-"or" return OR;
-"not" return NOT;
-"true" return TRUE;
-"false" return FALSE;
-"return" return RETURN;
-"if" return IF;
-"else" return ELSE;
-"while" return WHILE;
-"break" return BREAK;
-";" return SC;
-"," return COMMA;
-"(" return LPAREN;
-")" return RPAREN;
-"{" return LBRACE;
-"}" return RBRACE;
-"[" return LBRACK;
-"]"	return RBRACK;
-"=" return ASSIGN;
-{realop} return REALOP;
-{binop} return BINOP;
-{id} return ID;
-{num} return NUM;
+"void" {yyval=new Void(); return VOID; }
+"int" {yyval=new Int(); return INT;}
+"byte" {yylval= new Byte(); return BYTE;}
+"b" {yylval= new b(); return B;}
+"bool" {yylval= new Bool(); return BOOL;}
+"and" {yylval= new And(); return AND;}
+"or" {yylval= new Or(); return OR;}
+"not" {yylval= new Not(); return NOT;}
+"true" {yylval= new True(); return TRUE;}
+"false" {yylval= new False();return FALSE;}
+"return" {//yylval= new Return();
+	return RETURN;}
+"if" {//yylval= new If();
+    return IF;}
+"else" {//yylval= new Else();
+    return ELSE;}
+"while" {//yylval= new While();
+    return WHILE;}
+"break" {//yylval= new Break();
+    return BREAK;}
+";" {//yylval= new SC;
+	return SC; }
+"," {//yylval= new Comma();
+    return COMMA;}
+"(" {//yylval= new Lparen();
+    return LPAREN;}
+")" {//yylval= new Rparen();
+    return RPAREN;}
+"{" {//yylval= new Lbrace();
+    return LBRACE;}
+"}" {//yylval= new Rbrace();
+    return RBRACE;}
+"[" {//yylval= new Lbrack();
+	return LBRACK;}
+"]"	{//yylval= new Rbrack();
+	return RBRACK;}
+"=" {//yylval= new Assign();
+    return ASSIGN;}
+{realop} {yylval= new Relop();
+                return RELOP;}
+{binop} {yylval= new Binop();
+                return BINOP;}
+{id} return {yylval= new Id(yytext);
+                        return ID;}
+{num} return {yylval= new Num(yytext);
+                return NUM;}
+\"([^\n\r\"\\]|\\[rnt"\\])+\" {yylval= new String(yytext);
+                                return STRING;}				
 {comment} ;		//ignore comments
-
-
-
-\" BEGIN(string);yymore(); //need to fix here!
-<string>\\ BEGIN(escape);yymore();
-<escape>\\|\"|a|b|e|f|n|r|t|v|0|x{hexdig}{hexdig} BEGIN(string);yymore();
-<escape>. printf("Error undefined escape sequence %c\n",yytext[yyleng-1]);exit(0);
-<string>\" BEGIN(0);return STRING;//showToken("STRING")
-<string>{newline} yymore();
-<string>{whitespace} yymore();
-<string>[[:print:]] yymore();
-<string><<EOF>> printf("Error unclosed string\n");exit(0);
-<string>. printf("Error %c\n",yytext[yyleng-1]); exit(0);
-
-<<EOF>> return EF;//showToken("EOF"); exit(0);
 {newline}|{whitespace}	;
-.	printf("Error %s\n",yytext); exit(0);
+.	{errorLex(yylineno);exit(0);};
 %%
 
