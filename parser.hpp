@@ -6,6 +6,7 @@
 #include <iterator>
 #include <string>
 #include <vector>
+#include <stack>
 #include "output.hpp"
 
 using namespace std;
@@ -159,7 +160,7 @@ class Statement : public Node {
   Statement(Exp* expression);
   Statement(Type* type, Id* id);
   Statement(Id* id, Exp* expression);
-  Statement(Id* id, Exp* expression,Exp* expression);
+  Statement(Id* id, Exp* expression1,Exp* expression2);
   Statement(Exp* expression, Statement* statement);
   Statement(Type* type, Id* id, Exp* expression);
   Statement(Type* type, Id* id, Num* num);
