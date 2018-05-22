@@ -1,0 +1,167 @@
+%{
+#include "output.hpp"
+#include "parser.hpp"
+using namespace std;
+int yylex();
+void yyerror(const char*);
+stack<SymbolTable> TableStack;
+stack<int> OffsetStack;
+
+%}
+
+%token VOID
+%token INT;
+%token BYTE;
+%token B;
+%token BOOL;
+%left AND;
+%left OR;
+%right NOT;
+%token TRUE;
+%token FALSE;
+%token RETURN;
+%token WHILE;
+%token BREAK;
+%token SC;
+%token COMMA;
+%left LPAREN;
+%left RPAREN;
+%nonassoc ELSE;
+%token IF;
+%left LBRACE;
+%left RBRACE;
+%left LBRACK;       //check where and which token L/R BRACK needs
+%left RBRACK;       //^same^
+%right ASSIGN;
+%nonassoc RELOP;
+%left BINOP;
+%token ID;
+%token NUM;
+%token STRING;
+
+
+%%
+
+Program: Funcs {
+    Node* prog = new Program((FuncList*)$1);
+    printScope(TableStack.top());
+    TableStack.pop();
+    OffsetStack.pop();
+    delete prog;
+};
+
+Funcs: /*epsilon*/ {
+    $$ = new FuncList();
+};
+
+Funcs: FuncDecl Funcs {
+    $$ = new FuncList((FuncList*)$2,(Func*)$1);
+};
+
+FuncDecl: RetType ID LPAREN Formals RPAREN LBRACE Statements RBRACE
+;
+RetType: Type
+;
+RetType: VOID
+;
+Formals: /*epsilon*/
+;
+Formals: FormalsList
+;
+FormalsList: FormalDecl
+;
+FormalsList: FormalDecl COMMA FormalsList
+;
+FormalDecl: Type ID
+;
+FormalDecl: Type ID LBRACK NUM RBRACK
+;
+FormalDecl: Type ID LBRACK NUM B RBRACK
+;
+Statements: Statement
+;
+Statements: Statements Statement
+;
+Statement: LBRACE Statements RBRACE
+;
+Statement: Type ID SC
+;
+Statement: Type ID ASSIGN Exp SC
+;
+Statement: Type ID LBRACK NUM RBRACK SC
+;
+Statement: Type ID LBRACK NUM B RBRACK SC
+;
+Statement: ID ASSIGN Exp SC
+;
+Statement: ID LBRACK Exp RBRACK ASSIGN Exp SC
+;
+Statement: Call SC
+;
+Statement: RETURN SC
+;
+Statement: RETURN Exp SC
+;
+Statement: IF LPAREN Exp RPAREN Statement
+;
+Statement: IF LPAREN Exp RPAREN Statement ELSE Statement
+;
+Statement: WHILE LPAREN Exp RPAREN Statement
+;
+Statement: BREAK SC
+;
+Call: ID LPAREN ExpList RPAREN
+;
+Call: ID LPAREN RPAREN
+;
+ExpList: Exp
+;
+ExpList: Exp COMMA ExpList
+;
+Type: INT
+;
+Type: BYTE
+;
+Type: BOOL
+;
+Exp: LPAREN Exp RPAREN
+;
+Exp: ID LBRACK Exp RBRACK
+;
+Exp: Exp BINOP Exp
+;
+Exp: ID
+;
+Exp: Call
+;
+Exp: NUM
+;
+Exp: NUM B
+;
+Exp: STRING
+;
+Exp: TRUE
+;
+Exp: FALSE
+;
+Exp: NOT Exp
+;
+Exp: Exp AND Exp
+;
+Exp: Exp OR Exp
+;
+Exp: Exp RELOP Exp
+;
+
+
+%%
+
+void yyerror(const char*) {
+    errorSyn(yylineno);
+    exit(0);
+}
+
+int main(){
+    initializeStacks(TableStack,OffsetStack);
+    return yyparse();
+}
