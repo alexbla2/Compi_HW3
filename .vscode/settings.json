@@ -5,6 +5,7 @@
         "type_traits": "cpp",
         "utility": "cpp",
         "tuple": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "system_error": "cpp"
     }
 }

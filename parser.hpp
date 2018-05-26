@@ -12,33 +12,35 @@
 using namespace std;
 class Symbol;
 typedef vector<Symbol> SymbolTable;
-extern stack<SymbolTable> TableStack; //TABLESTACK !!!TODO
+extern stack<SymbolTable> TableStack; 
 
 extern int yylineno;
 
 
 #define YYSTYPE Node*
 
+class Type;
+
 class Symbol{
     public:
     string name;
-    string type;
+    Type type;											//now is Type class and not a string
     int offset;
     bool isFunc;
     std::vector<string> args;
     string ret;
     
-	Symbol(): name(""), type(""), offset(0), isFunc(false){}
+	Symbol(): name(""), type(Type()), offset(0), isFunc(false){}
     
 	Symbol(const Symbol& sym) : name(sym.name), type(sym.type), offset(sym.offset),
 		isFunc(sym.isFunc), ret(sym.ret), args(sym.args) {}
 	
-    Symbol(string name, string type ,int offset) : name(name), type(type),
+    Symbol(string name, Type type ,int offset) : name(name), type(type),
 		offset(offset), isFunc(false) {}
     
-	Symbol(string name, string type ,int offset,std::vector<string>& args,string ret ) : 
+	Symbol(string name, Type type ,int offset,std::vector<string>& args,string ret ) : 
 		name(name), type(type), offset(offset),args(args),ret(ret), isFunc(true) {}
-}
+};
 
 class Node {
 	public:
@@ -65,17 +67,17 @@ class Void : public Node {
 
 class Int : public Node {
 	public:
-	string type;
+	Type type;						//now is Type class and not a string
   
-	Int() : type("INT") {}
+	Int() : type(Type("INT")) {}
 
 };
 
 class Byte : public Node {
 	public:
-	string type;
+	Type type;						//now is Type class and not a string
 
-	Byte() : type("BYTE") {}
+	Byte() : type(Type("BYTE")) {}
 	
 };
 
@@ -83,9 +85,9 @@ class B : public Node {};
 
 class Bool : public Node {
 	public:
-	string type;
+	Type type;					//now is Type class and not a string
 
-	Bool() : type("BOOL") {}
+	Bool() : type(Type("BOOL")) {}
 	
 };
 
@@ -124,42 +126,47 @@ class Id : public Node {
 
 class Num : public Node {
     public:
-    string type;
+    Type type;								//now is Type class and not a string
     int value;
 	
-    Num(char* yytext) : value(atoi(yytext)), type("INT") {}
+    Num(char* yytext) : type(Type("INT")), value(atoi(yytext)) {}
 	
 };
 
 class String : public Node {
     public:
-    string type;
+    Type type;								//now is Type class and not a string
     string value;
 	
-    String(char* yytext) :	value(string(yytext)), type("STRING") {}
+    String(char* yytext) :	 type(Type("STRING")), value(string(yytext)) {}
 		
 };
 
-
+//the class is now more complicated - need to update its CONS accord.
 class Type : public Node {
 	public:
 	string type;
+	int size; 														//new val added to TYPE
+	bool isArray;													//new val added to TYPE
 	
 	Type(){};
-	Type(Int* type);
-	Type(Byte* type);
-	Type(Bool* type);
+	Type(string type): type(type),size(0),isArray(false){}			//cons for name only (not an array)
+	Type(const Type& Ctype) : type(Ctype.type), size(Ctype.size), isArray(Ctype.isArray){}		//Copy cons added
+	Type(Int* type,int typeSize,bool typeIsArray);			//need to change type cons
+	Type(Byte* type,int typeSize,bool typeIsArray);
+	Type(Bool* type,int typeSize,bool typeIsArray);
 };
 
 class Exp : public Node {
 	public:
-	string type;
+	Type type;												//now has a TYPE *class* - and not string !! (need to change accord)
 
 	Exp(){};
 	Exp(String* s);
 	Exp(Exp* exp);
 	Exp(Exp* exp1, Binop* binop, Exp* exp2);
 	Exp(Id* id,Exp* exp);
+	Exp(Id* id,Exp* exp,bool isArray);						//new cons for Array exp !
 	Exp(Id* id);
 	Exp(Call* call);
 	Exp(Num* num);
@@ -174,9 +181,9 @@ class Exp : public Node {
 
 class ExpList : public Node {
 	public:
-	std::vector<string> types;
+	std::vector<Type> types;							//vector of type classes
 
-	ExpList() : types( std::vector<string>() ) {}
+	ExpList() : types( std::vector<Type>() ) {}
 	ExpList(Exp* expression);
 	ExpList(Exp* expression, ExpList* expList);
 };
@@ -192,11 +199,13 @@ class Statement : public Node {
 	Statement(Exp* expression);
 	Statement(Type* type, Id* id);
 	Statement(Id* id, Exp* expression);
-	Statement(Id* id, Exp* expression1,Exp* expression2);
+	Statement(Id* id, Exp* expression1,Exp* expression2);					//cons for Array assignment (example: a[7]=4)
 	Statement(Exp* expression, Statement* statement);
 	Statement(Type* type, Id* id, Exp* expression);
 	Statement(Type* type, Id* id, Num* num);
+	Statement(Type* type, Id* id, Num* num,bool isArray);					//new cons for Array statement
 	Statement(Type* type, Id* id, Num* num, B* byte);
+	Statement(Type* type, Id* id, Num* num, B* byte,bool isArray); 			//new cons for Array statement
 	Statement(Exp* expression, Statement* ifStatment, Statement* elseStatement);
 };
 
@@ -220,13 +229,15 @@ class Call : public Node {
 
 class FormalDecl : public Node {
 	public:
-	string type;
+	Type type;											//now is Type class and not a string
 	string id;
 
 	FormalDecl(){}
 	FormalDecl(Type* type, Id* id);
-	FormalDecl(Type* type, Id* id,Num* num);
-	FormalDecl(Type* type, Id* id,Num* num, B* byte );
+
+	//those two are only array option so we dont send a flag with them
+	FormalDecl(Type* type, Id* id,Num* num);						//cons for array : bool a[5]; 5 is num 
+	FormalDecl(Type* type, Id* id,Num* num, B* byte );				//cons for array : bool a[5]; 5 is numB
 };
 
 class FormalsList : public Node {
@@ -249,7 +260,7 @@ class Formals : public Node {
 
 class RetType : public Node {
 	public:
-	string type;
+	Type type;							//now is Type class and not a string
 
 	RetType(){}
 	RetType(Void* voidNode);
@@ -259,7 +270,7 @@ class RetType : public Node {
 class Func : public Node {
 	public:
 	string id;
-	string ret;
+	Type ret;						//now is Type class and not a string
 	Formals* formals;
 	
 	Func(){}
