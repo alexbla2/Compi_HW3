@@ -123,8 +123,8 @@ FormalsList: FormalDecl { $$ = new FormalsList((FormalDecl*)$1); }
 ;
 
 FormalDecl: Type ID{ $$ = new FormalDecl((Type*)$1, (Id*)$2); }
-            | Type ID LBRACK NUM RBRACK { $$ = new FormalDecl((Type*)$1, (Id*)$2,(Num*)$4); } //int array function parameter - special case?
-            | Type ID LBRACK NUM B RBRACK { $$ = new FormalDecl((Type*)$1, (Id*)$2,(Num*)$4, (B*)$5); }
+            | Type ID LBRACK NUM RBRACK { $$ = new FormalDecl((Type*)$1, (Id*)$2,(Num*)$4); }       //array function 
+            | Type ID LBRACK NUM B RBRACK { $$ = new FormalDecl((Type*)$1, (Id*)$2,(Num*)$4, (B*)$5); }     //array function  
 ;
 
 Statements: Statement { $$ = new Statements((Statement*)$1); }
@@ -154,12 +154,12 @@ Statement: Type ID ASSIGN Exp SC {
     newVarScope(TableStack, OffsetStack, (Type*) $1, (Id*) $2, yylineno);
 };
 
-//dec of a new int array - special case?
+//dec of a new int array 
 Statement: Type ID LBRACK NUM RBRACK SC {
     $$ = new Statement((Type*) $1, (Id*)$2, (Num*)$4);
 };
 
-//dec of a new byte array       ~~~~~~~~~~~~~~~~~~~~~~~~~~~how do we save the correct type of it???????????????????????????????????
+//dec of a new byte array       
 Statement: Type ID LBRACK NUM B RBRACK SC {
         $$ = new Statement((Type*) $1, (Id*)$2, (Num*)$4, (B*)$5);
 };
@@ -169,7 +169,7 @@ Statement: ID ASSIGN Exp SC {
     $$ = new Statement((Id*)$1, (Exp*)$3);
 };
 
-//assign to an array - special case?
+//assign to an array 
 Statement: ID LBRACK checkArrayIndexType RBRACK ASSIGN Exp SC {
     $$ = new Statement((Id*)$1, (Exp*)$3, (Exp*)$6);
 };
@@ -291,7 +291,7 @@ Type: INT  { $$ = new Type((Int*)$1); }
 ;
 
 Exp: LPAREN Exp RPAREN { $$ = new Exp((Exp*)$2); }
-    | ID LBRACK checkArrayIndexType RBRACK { $$ = new Exp((Id*)$1, (Exp*)$3); } //array var - maybe some special case?
+    | ID LBRACK checkArrayIndexType RBRACK { $$ = new Exp((Id*)$1, (Exp*)$3,true); } //array var 
     | Exp BINOP Exp { $$ = new Exp((Exp*)$1, (Binop*)$2, (Exp*)$3); }
     | ID { $$ = new Exp((Id*)$1); }
     | Call { $$ = new Exp((Call*)$1); }

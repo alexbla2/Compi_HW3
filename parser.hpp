@@ -199,13 +199,11 @@ class Statement : public Node {
 	Statement(Exp* expression);
 	Statement(Type* type, Id* id);
 	Statement(Id* id, Exp* expression);
-	Statement(Id* id, Exp* expression1,Exp* expression2);					//cons for Array assignment (example: a[7]=4)
+	Statement(Id* id, Exp* expression1,Exp* expression2);		//cons for Array assignment (example: a[7]=4)
 	Statement(Exp* expression, Statement* statement);
 	Statement(Type* type, Id* id, Exp* expression);
-	Statement(Type* type, Id* id, Num* num);
-	Statement(Type* type, Id* id, Num* num,bool isArray);					//new cons for Array statement
-	Statement(Type* type, Id* id, Num* num, B* byte);
-	Statement(Type* type, Id* id, Num* num, B* byte,bool isArray); 			//new cons for Array statement
+	Statement(Type* type, Id* id, Num* num);					//new cons for Array statement
+	Statement(Type* type, Id* id, Num* num, B* byte); 			//new cons for Array statement
 	Statement(Exp* expression, Statement* ifStatment, Statement* elseStatement);
 };
 
