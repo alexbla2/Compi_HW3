@@ -17,6 +17,7 @@ void initializeScopes(stack<SymbolTable>& scopes, stack<int>& offsets) {
   scopes.top().push_back(s);
 }
 
+
 void addScope(stack<SymbolTable>& scopes, stack<int>& offsets) {
   SymbolTable newScope;
   scopes.push(newScope);
@@ -88,7 +89,7 @@ SymbolTable::iterator findId(SymbolTable& table, string id) {
   return table.end();
 }
 
-bool canBreak(stack<bool>& breakables) { return !(breakables.empty()); }
+bool canBreak(stack<bool>& breakables) { return !(breakables.empty()); }//TODO
 
 bool isDeclared(stack<SymbolTable>& scopes, Id* id) {
   stack<SymbolTable> scopes_copy = scopes;
@@ -102,6 +103,7 @@ bool isDeclared(stack<SymbolTable>& scopes, Id* id) {
 }
 
 string getTypeById(stack<SymbolTable>& scopes, Id* id) {
+  
   stack<SymbolTable> scopes_copy = scopes;
   while (!scopes_copy.empty()) {
     if (findId(scopes_copy.top(), (id->text)) != scopes_copy.top().end()) {
@@ -175,18 +177,19 @@ Func::Func(RetType* ret, Id* id, Formals* formals, Statements* statements) {
   this->formals = formals;
 }
 
-Void::Void() { this->text = string("VOID"); }
+
 
 RetType::RetType(Void* voidNode) {
   this->children.push_back(voidNode);
   type = voidNode->text;
 }
+
 RetType::RetType(Type* type) {
   this->children.push_back(type);
   this->type = type->type;
 }
 
-Formals::Formals() {}
+
 
 Formals::Formals(FormalsList* formalsList) {
   this->children.push_back(formalsList);
@@ -263,7 +266,7 @@ Statement::Statement(Id* id, Exp* expression) {
   }
   if (getTypeById(scopes, id) != expression->type) {
     if (getTypeById(scopes, id) == "INT" && expression->type == "BYTE") {
-      // can assign byte to int
+      // byte assignment to int is ok
     } else {
       errorMismatch(yylineno);
       exit(0);
@@ -414,6 +417,7 @@ Exp::Exp(Exp* expression) {
   this->children.push_back(expression);
   this->type = expression->type;
 }
+
 Exp::Exp(Exp* expression1, Binop* binop, Exp* expression2) {
   this->children.push_back(expression1);
   this->children.push_back(binop);
@@ -429,6 +433,7 @@ Exp::Exp(Exp* expression1, Binop* binop, Exp* expression2) {
     this->type = "BYTE";
   }
 }
+
 Exp::Exp(Id* id) {
   this->children.push_back(id);
   if (!isDeclared(scopes, id)) {
@@ -437,6 +442,7 @@ Exp::Exp(Id* id) {
   }
   this->type = getTypeById(scopes, id);
 }
+
 Exp::Exp(Call* call) {
   this->children.push_back(call);
   Symbol s = getSymbolById(scopes, call->id);
@@ -454,14 +460,17 @@ Exp::Exp(Num* num, b* byte) {
     exit(0);
   }
 }
+
 Exp::Exp(False* f) {
   this->children.push_back(f);
   this->type = "BOOL";
 }
+
 Exp::Exp(True* t) {
   this->children.push_back(t);
   this->type = "BOOL";
 }
+
 Exp::Exp(Not* notOp, Exp* expression2) {
   this->children.push_back(notOp);
   this->children.push_back(expression2);
@@ -471,6 +480,7 @@ Exp::Exp(Not* notOp, Exp* expression2) {
   }
   this->type = "BOOL";
 }
+
 Exp::Exp(Exp* expression1, And* andOp, Exp* expression2) {
   this->children.push_back(expression1);
   this->children.push_back(andOp);
@@ -481,6 +491,7 @@ Exp::Exp(Exp* expression1, And* andOp, Exp* expression2) {
   }
   this->type = "BOOL";
 }
+
 Exp::Exp(Exp* expression1, Or* orOp, Exp* expression2) {
   this->children.push_back(expression1);
   this->children.push_back(orOp);
@@ -491,6 +502,7 @@ Exp::Exp(Exp* expression1, Or* orOp, Exp* expression2) {
   }
   this->type = "BOOL";
 }
+
 Exp::Exp(Exp* expression1, Relop* relop, Exp* expression2) {
   this->children.push_back(expression1);
   this->children.push_back(relop);

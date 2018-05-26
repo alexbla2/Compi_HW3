@@ -16,10 +16,46 @@ extern stack<SymbolTable> TableStack;
 
 extern int yylineno;
 
-
 #define YYSTYPE Node*
 
-class Type;
+class Node {
+	public:
+	int linenum;
+	std::vector<Node*> sons;
+	
+	Node(){
+		linenum=yylineno;
+	}
+
+	virtual ~Node() {
+	for (std::vector<Node*>::const_iterator it = sons.begin(); it != sons.end(); it++)
+	  delete *it;
+	}
+};
+
+//the class is now more complicated - need to update its CONS accord.
+class Type : public Node {
+	public:
+	string type;
+	int size; 														//new val added to TYPE
+	bool isArray;													//new val added to TYPE
+	
+	Type(){};
+	Type(string type): type(type),size(0),isArray(false){}			//cons for name only (not an array)TODO SIZE(1)??
+	Type(const Type& Ctype) : type(Ctype.type), size(Ctype.size), isArray(Ctype.isArray){}		//Copy cons added
+	Type(Int* type,int typeSize,bool typeIsArray);			//need to change type cons
+	Type(Byte* type,int typeSize,bool typeIsArray);
+	Type(Bool* type,int typeSize,bool typeIsArray);
+	
+	bool operator==(const Type& t) const{
+	
+		if(this->type == t.type && this->size == t.size)
+			return true;
+		
+		return false;
+	}
+	
+};
 
 class Symbol{
     public:
@@ -42,26 +78,11 @@ class Symbol{
 		name(name), type(type), offset(offset),args(args),ret(ret), isFunc(true) {}
 };
 
-class Node {
-	public:
-	int linenum;
-	std::vector<Node*> sons;
-	
-	Node(){
-		linenum=yylineno;
-	}
-
-	virtual ~Node() {
-	for (std::vector<Node*>::const_iterator it = sons.begin(); it != sons.end(); it++)
-	  delete *it;
-	}
-};
-
 class Void : public Node {
 	public:
-	string text;
+	Type type;
 
-	Void();
+	Void() : type("Void"){}
 	
 };
 
@@ -117,8 +138,7 @@ class Id : public Node {
     public:
     string text;
 	
-    Id(char* yytext) : text(string(yytext)) {}
-    Id(string yytext) : text(yytext) {}
+    Id(const char* yytext) : text(yytext) {}
 	
     virtual ~Id() {}
 	
@@ -133,35 +153,20 @@ class Num : public Node {
 	
 };
 
-class String : public Node {
+class String : public Node {//TODO WHY DO WE NEED THIS STRUCT??
     public:
     Type type;								//now is Type class and not a string
     string value;
 	
-    String(char* yytext) :	 type(Type("STRING")), value(string(yytext)) {}
+    String(const char* yytext) :	 type(Type("STRING")), value(yytext) {}
 		
-};
-
-//the class is now more complicated - need to update its CONS accord.
-class Type : public Node {
-	public:
-	string type;
-	int size; 														//new val added to TYPE
-	bool isArray;													//new val added to TYPE
-	
-	Type(){};
-	Type(string type): type(type),size(0),isArray(false){}			//cons for name only (not an array)
-	Type(const Type& Ctype) : type(Ctype.type), size(Ctype.size), isArray(Ctype.isArray){}		//Copy cons added
-	Type(Int* type,int typeSize,bool typeIsArray);			//need to change type cons
-	Type(Byte* type,int typeSize,bool typeIsArray);
-	Type(Bool* type,int typeSize,bool typeIsArray);
 };
 
 class Exp : public Node {
 	public:
 	Type type;												//now has a TYPE *class* - and not string !! (need to change accord)
 
-	Exp(){};
+	Exp(){}
 	Exp(String* s);
 	Exp(Exp* exp);
 	Exp(Exp* exp1, Binop* binop, Exp* exp2);
@@ -193,7 +198,7 @@ class Statements;
 class Statement : public Node {
 	public:
 	
-	Statement();
+	Statement(){}
 	Statement(Statements* statements);
 	Statement(Call* call);
 	Statement(Exp* expression);
@@ -210,7 +215,7 @@ class Statement : public Node {
 class Statements : public Node {
 	public:
 
-	Statements();
+	Statements(){}
 	Statements(Statement* statement);
 	Statements(Statements* statements, Statement* statement); //recursion
 
@@ -252,7 +257,7 @@ class Formals : public Node {
 	public:
 	std::vector<FormalDecl*> formals;
 
-	Formals();
+	Formals(){}
 	Formals(FormalsList* formalsList);
 };
 
