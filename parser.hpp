@@ -194,7 +194,7 @@ class Exp : public Node {
 	string type;												//now has a TYPE *class* - and not string !! (need to change accord)
 
 	Exp();
-	Exp(String* s);
+	Exp(String* s,bool isAPrintFunc);
 	Exp(Exp* exp);
 	Exp(Exp* exp1, Binop* binop, Exp* exp2);
 	Exp(Id* id,Exp* exp);							//new cons for Array exp !				

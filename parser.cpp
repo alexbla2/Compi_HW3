@@ -558,12 +558,11 @@ Exp::Exp(Id* id,Exp* exp){
 }
 
 
-Exp::Exp(String* expression) {
-	/*TODO
-	if (allowStrings != true) {
-	errorMismatch(yylineno);
-	exit(0);
-	}*/
+Exp::Exp(String* expression,bool isAprintFunc) {
+	if (!isAprintFunc) {
+		errorMismatch(yylineno);
+		exit(0);
+	}
 	this->sons.push_back(expression);
 	this->type = "STRING";
 }
