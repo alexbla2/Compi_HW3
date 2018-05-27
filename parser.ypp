@@ -297,14 +297,14 @@ ExpList: Exp { $$ = new ExpList((Exp*)$1); }
         | Exp COMMA ExpList { $$ = new ExpList((Exp*)$1, (ExpList*)$3); }
 ;
 
-Type: INT  { $$ = new Type((Int*)$1); }
-    | BYTE { $$ = new Type((Byte*)$1); }
-    | BOOL { $$ = new Type((Bool*)$1); }
+Type: INT  { $$ = new Type("INT"); }
+    | BYTE { $$ = new Type("BYTE"); }
+    | BOOL { $$ = new Type("BOOL"); }
 ;
 
 
 Exp: LPAREN Exp RPAREN { $$ = new Exp((Exp*)$2); }
-    | ID LBRACK checkArrayIndexType RBRACK { $$ = new Exp((Id*)$1, (Exp*)$3,true); }        //array var 
+    | ID LBRACK checkArrayIndexType RBRACK { $$ = new Exp((Id*)$1, (Exp*)$3); }        //array var 
     | Exp BINOP Exp { $$ = new Exp((Exp*)$1, (Binop*)$2, (Exp*)$3); }
     | ID { $$ = new Exp((Id*)$1); }
     | Call { $$ = new Exp((Call*)$1); }

@@ -32,59 +32,10 @@ class Node {
 	}
 };
 
-//the class is now more complicated - need to update its CONS accord.
-class Type : public Node {
-	public:
-	string type;
-	int size; 														//new val added to TYPE
-	bool isArray;													//new val added to TYPE
-	
-	Type(){};
-	Type(string type): type(type),size(1),isArray(false){}			//cons for name only (*not an array*)TODO SIZE(1) - V done maybe we dont need it
-
-	Type(const Type& Ctype) : type(Ctype.type), size(Ctype.size), isArray(Ctype.isArray){}		//Copy cons added
-	Type(Int* type) : type("INT"),size(1),isArray(false){}
-	Type(Byte* type) : type("BYTE"),size(1),isArray(false){}
-	Type(Bool* type) : type("BOOL"),size(1),isArray(false){}
-
-	Type(Int* type,int typeSize,bool typeIsArray);			//need to change type cons - array cons
-	Type(Byte* type,int typeSize,bool typeIsArray);			//need to change type cons - array cons
-	Type(Bool* type,int typeSize,bool typeIsArray);			//need to change type cons - array cons
-	
-	bool operator==(const Type& t) const{
-	
-		if(this->type == t.type && this->size == t.size && this->isArray == t.isArray)		//added "arrayness" check
-			return true;
-		
-		return false;
-	}
-	
-};
-
-class Symbol{
-    public:
-    string name;
-    Type type;											//now is Type class and not a string
-    int offset;
-    bool isFunc;
-    vector<string> args;
-    Type ret;											//changed to Type instead of strign ret type
-    
-	Symbol(): name(""), type(Type()), offset(0), isFunc(false){}
-    
-	Symbol(const Symbol& sym) : name(sym.name), type(sym.type), offset(sym.offset),
-		isFunc(sym.isFunc), ret(sym.ret), args(sym.args) {}
-	
-    Symbol(const string& name, Type type ,int offset) : name(name), type(type),
-		offset(offset), isFunc(false) {}
-    
-	Symbol(const string& name, Type type ,int offset,vector<string>& args,Type ret ) : 		//Type ret !
-		name(name), type(type), offset(offset),args(args),ret(ret), isFunc(true) {}
-};
 
 class Void : public Node {
 	public:
-	Type type;
+	string type;
 
 	Void() : type("Void"){}
 	
@@ -92,7 +43,7 @@ class Void : public Node {
 
 class Int : public Node {
 	public:
-	Type type;						//now is Type class and not a string
+	string type;						//now is Type class and not a string
   
 	Int() : type("INT") {}
 
@@ -100,7 +51,7 @@ class Int : public Node {
 
 class Byte : public Node {
 	public:
-	Type type;						//now is Type class and not a string
+	string type;						//now is Type class and not a string
 
 	Byte() : type("BYTE") {}
 	
@@ -110,11 +61,62 @@ class B : public Node {};
 
 class Bool : public Node {
 	public:
-	Type type;					//now is Type class and not a string
+	string type;					//now is Type class and not a string
 
 	Bool() : type("BOOL") {}
 	
 };
+
+//the class is now more complicated - need to update its CONS accord.
+class Type : public Node {
+	public:
+	string type;
+	// int size; 														//new val added to TYPE
+	// bool isArray;													//new val added to TYPE
+	
+	Type(): type(""){}
+	Type(string t): type(t){}			//cons for name only (*not an array*)TODO SIZE(1) - V done maybe we dont need it
+
+	Type(const Type& Ctype) : type(Ctype.type){}		//Copy cons added
+	// Type(Int* t) : type("INT"),size(1),isArray(false){}
+	// Type(Byte* t) : type("BYTE"),size(1),isArray(false){}
+	// Type(Bool* t) : type("BOOL"),size(1),isArray(false){}
+
+	// Type(Int* t,int typeSize,bool typeIsArray);			//need to change type cons - array cons
+	// Type(Byte* t,int typeSize,bool typeIsArray);			//need to change type cons - array cons
+	// Type(Bool* t,int typeSize,bool typeIsArray);			//need to change type cons - array cons
+	
+	// bool operator==(const Type& t) const{
+	
+	// 	if(this->type == t.type && this->size == t.size && this->isArray == t.isArray)		//added "arrayness" check
+	// 		return true;
+		
+	// 	return false;
+	// }
+	
+};
+
+class Symbol{
+    public:
+    string name;
+    string type;											//now is Type class and not a string
+    int offset;
+    bool isFunc;
+    vector<string> args;
+    string ret;											//changed to Type instead of strign ret type
+    
+	Symbol(): name(""), type(""), offset(0), isFunc(false){}
+    
+	Symbol(const Symbol& sym) : name(sym.name), type(sym.type), offset(sym.offset),
+		isFunc(sym.isFunc), ret(sym.ret), args(sym.args) {}
+	
+    Symbol(string name, string type ,int offset) : name(name), type(type),
+		offset(offset), isFunc(false) {}
+    
+	Symbol(string name, string type ,int offset,vector<string>& args,string ret ) : 		//Type ret !
+		name(name), type(type), offset(offset),args(args),ret(ret), isFunc(true) {}
+};
+
 
 class And : public Node {};
 class Or : public Node {};
@@ -142,7 +144,8 @@ class Id : public Node {
     public:
     string text;
 	
-    Id(string yytext) : text(yytext) {}
+    Id(char* yytext) : text(string(yytext)) {}
+	Id(string yytext) : text(yytext) {}
 	
     virtual ~Id() {}
 	
@@ -150,7 +153,7 @@ class Id : public Node {
 
 class Num : public Node {
     public:
-    Type type;								//now is Type class and not a string
+    string type;								//now is Type class and not a string
     int value;
 	
     Num(char* yytext) : type("INT"), value(atoi(yytext)) {}
@@ -159,23 +162,42 @@ class Num : public Node {
 
 class String : public Node {//TODO WHY DO WE NEED THIS STRUCT??
     public:
-    Type type;								//now is Type class and not a string
+    string type;								//now is Type class and not a string
     string value;
 	
     String(const char* yytext) :	 type("STRING"), value(yytext) {}
 		
 };
 
+class Exp;
+
+class ExpList : public Node {
+	public:
+	vector<string> types;							//vector of type classes
+
+	ExpList() : types( vector<string>() ) {}
+	ExpList(Exp* expression);
+	ExpList(Exp* expression, ExpList* expList);
+};
+
+class Call : public Node {
+	public:
+	string id;
+
+	Call(){}
+	Call(Id* id);
+	Call(Id* id, ExpList* expList);
+};
+
 class Exp : public Node {
 	public:
-	Type type;												//now has a TYPE *class* - and not string !! (need to change accord)
+	string type;												//now has a TYPE *class* - and not string !! (need to change accord)
 
-	Exp(){}
+	Exp();
 	Exp(String* s);
 	Exp(Exp* exp);
 	Exp(Exp* exp1, Binop* binop, Exp* exp2);
-	Exp(Id* id,Exp* exp);
-	Exp(Id* id,Exp* exp,bool isArray);						//new cons for Array exp !
+	Exp(Id* id,Exp* exp);							//new cons for Array exp !				
 	Exp(Id* id);
 	Exp(Call* call);
 	Exp(Num* num);
@@ -186,15 +208,6 @@ class Exp : public Node {
 	Exp(Exp* expression1, And* andOp, Exp* expression2);
 	Exp(Exp* exp1, Or* orOp, Exp* exp2);
 	Exp(Exp* exp1, Relop* relop, Exp* exp2);
-};
-
-class ExpList : public Node {
-	public:
-	vector<Type*> types;							//vector of type classes
-
-	ExpList() : types( vector<Type*>() ) {}
-	ExpList(Exp* expression);
-	ExpList(Exp* expression, ExpList* expList);
 };
 
 class Statements;
@@ -225,18 +238,9 @@ class Statements : public Node {
 
 };
 
-class Call : public Node {
-	public:
-	string id;
-
-	Call(){}
-	Call(Id* id);
-	Call(Id* id, ExpList* expList);
-};
-
 class FormalDecl : public Node {
 	public:
-	Type type;											//now is Type class and not a string
+	string type;											//now is Type class and not a string
 	string id;
 
 	FormalDecl(){}
@@ -267,7 +271,7 @@ class Formals : public Node {
 
 class RetType : public Node {
 	public:
-	Type type;							//now is Type class and not a string
+	string type;							//now is Type class and not a string
 
 	RetType(){}
 	RetType(Void* voidNode);
@@ -277,7 +281,7 @@ class RetType : public Node {
 class Func : public Node {
 	public:
 	string id;
-	Type ret;						//now is Type class and not a string
+	string ret;						//now is Type class and not a string
 	Formals* formals;
 	
 	Func(){}
@@ -303,4 +307,4 @@ class Program : public Node {
 	virtual ~Program() {}
 };
 
-#endif H_PARSER
+#endif

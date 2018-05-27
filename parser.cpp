@@ -12,12 +12,12 @@ void StacksInit(stack<SymbolTable>& StackTable, stack<int>& OffsetStack) {
 	PrintargTypes.push_back("STRING");
 	PrintIargTypes.push_back("INT");
 
-	Type sym1Type(makeFunctionType("VOID", PrintargTypes));
-	Type sym2Type(makeFunctionType("VOID", PrintIargTypes));
-	Type returnType("VOID");
+	string s1=(makeFunctionType("VOID", PrintargTypes));
+	string s2=(makeFunctionType("VOID", PrintIargTypes));
+	string ret1= "VOID";
 
-	Symbol sym1("print", sym1Type, OffsetStack.top(), PrintargTypes, returnType);		//maybe need to send a & ?
-	Symbol sym2("printi", sym2Type, OffsetStack.top(), PrintIargTypes, returnType);
+	Symbol sym1("print", s1, OffsetStack.top(), PrintargTypes, ret1);		//maybe need to send a & ?
+	Symbol sym2("printi", s2, OffsetStack.top(), PrintIargTypes, ret1);
 	
 	StackTable.top().push_back(sym1);
 	StackTable.top().push_back(sym2);
@@ -61,7 +61,7 @@ void printScope(SymbolTable& scope){
   
   endScope();
   for (SymbolTable::iterator it = scope.begin(); it != scope.end(); it++)
-    printID(it->name, it->offset, it->type.type);
+    printID(it->name, it->offset, it->type);
 }
 
 //need TODO
@@ -85,7 +85,7 @@ void addFormalsToScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
 }
 
 void newVarScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
-                        Type* type, Id* id, int lineno) {
+                        string type, Id* id, int lineno) {
  
 	if (symDeclared(StackTable, id)) {
 		errorDef(lineno, id->text);
@@ -112,15 +112,16 @@ void addFuncToScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
 	std::vector<string> argTypes;
 	for (vector<FormalDecl*>::reverse_iterator it = formals->formals.rbegin();
 	   it != formals->formals.rend(); it++) {
-		   if((*it)->type.isArray){
-				argTypes.push_back(makeArrayType((*it)->type.type,(*it)->type.size));
-			}else{
-				argTypes.push_back((*it)->type.type);
-			}
+			argTypes.push_back((*it)->type);
 	}
-	Type funcType(makeFunctionType(ret->type.type, argTypes)); //only RetType ret type
+	string funcType=makeFunctionType(ret->type,argTypes);
 	Symbol sym(id->text, funcType, OffsetStack.top(),argTypes, ret->type);
 	StackTable.top().push_back(sym);
+}
+
+bool isArray(string name){
+	int pos1=name.find("[");
+	return (pos1 != -1);
 }
 
 
@@ -155,66 +156,36 @@ Symbol getIdSymbol(stack<SymbolTable>& StackTable, string id) {
 }
 
 //TODO
-bool validTypes(vector<string>& types,vector<Type*>& types2){
+bool validTypes(vector<string>& types1,vector<string>& types2){
 
-	vector<string> newVec;
-	string temp;
-	int byteArray[types2.size()];
-	int i=0;
-	for (vector<Type*>::iterator it = types2.begin();
-       it != types2.end(); it++) {
-		   if((*it)->isArray){
-			   temp = makeArrayType((*it)->type,(*it)->size);
-		   }
-		   else{
-			   	temp = (*it)->type;
-		   }
-		   newVec.push_back(temp);
-
-		   if((*it)->type == "BYTE" && (*it)->isArray ==true){
-			   byteArray[i]=(*it)->size;
-		   }else{
-			   byteArray[i]=0;
-		   }
-		   i++;
-	}
-	 if( types.size() != newVec.size() ){
+	 if( types1.size() != types2.size() ){
 		return false;
 	 }
-	for(int i=0; i < types.size(); i++){
 
-		if(types[i] != newVec[i]){
-			if(types[i] == "INT" && newVec[i] == "BYTE")
+	for(int i=0; i < types1.size(); i++){
+
+		if(types1[i] != types2[i]){
+			if(types1[i] == "INT" && types2[i] == "BYTE")
 				continue;
 			//array case
-			int stringSize=types[i].size();
-			int stringSize2=newVec[i].size();
-			if(types[i][0] == 'I' && newVec[i][0] == 'B' && newVec[i][1] == 'Y'){
-				for(int j=4; j<stringSize, j+1 <stringSize2; j++){
-					if(types[i][j] != newVec[i][j+1]){
-						return false;
-					} 
-				}
+			int pos1 = types1[i].find("INT");
+			int pos2=types2[i].find("BYTE");
+			if(pos1 == -1 || pos2 == -1){
+				return false;
 			}
-			return false;
+			pos1=types1[i].find("[");
+			pos2=types2[i].find("[");
+			if(pos1 == -1 || pos2 == -1){
+				return false;
+			}
+			string temp1=types1[i].substr(pos1);
+			string temp2=types2[i].substr(pos2);
+			if(temp1 != temp2){
+				return false;
+			}
 		}
 	}
 	return true;
-}
-
-
-Type::Type(Int* type,int typeSize,bool typeIsArray) : type("INT"),size(typeSize),isArray(typeIsArray){
-	this->sons.push_back(type);
-}
-
-
-Type::Type(Bool* type,int typeSize,bool typeIsArray) : type("BOOL"),size(typeSize),isArray(typeIsArray){
-	this->sons.push_back(type);
-}
-
-
-Type::Type(Byte* type,int typeSize,bool typeIsArray) : type("BYTE"),size(typeSize),isArray(typeIsArray){
-	this->sons.push_back(type);
 }
 
 Program::Program(FuncList* funcs) {
@@ -233,7 +204,7 @@ Program::Program(FuncList* funcs) {
 		exit(0);
 	}
 	
-	if(mainFuncSymbol.ret.type!="VOID"){
+	if(mainFuncSymbol.ret !="VOID"){
 		errorMainMissing();
 		exit(0);
 	}
@@ -267,7 +238,7 @@ RetType::RetType(Void* voidNode) : type("Void"){
 }
 
 
-RetType::RetType(Type* t) : type(*t){
+RetType::RetType(Type* t) : type(t->type){
 	
 	this->sons.push_back(t);
 }
@@ -295,7 +266,7 @@ list(vector<FormalDecl*>(formalsList->list)) {
 }
 
 
-FormalDecl::FormalDecl(Type* t, Id* id) : type(*t), id(id->text){
+FormalDecl::FormalDecl(Type* t, Id* id) : type(t->type), id(id->text){
   
 	this->sons.push_back(t);
 	this->sons.push_back(id);
@@ -311,10 +282,7 @@ FormalDecl::FormalDecl(Type* t, Id* id,Num* num) {
 		output::errorInvalidArraySize(yylineno,id->text);
 		exit(0);
 	}
-
-	this->type.type=t->type;
-	this->type.size=num->value;
-	this->type.isArray=true;
+	this->type = makeArrayType(t->type,num->value);
 }
 
 FormalDecl::FormalDecl(Type* t, Id* id,Num* num, B* byte ){
@@ -327,9 +295,7 @@ FormalDecl::FormalDecl(Type* t, Id* id,Num* num, B* byte ){
 		exit(0);
 	}
 
-	this->type.type=t->type;
-	this->type.size=num->value;
-	this->type.isArray=true;
+	this->type = makeArrayType(t->type,num->value);
 }
 
 
@@ -424,9 +390,9 @@ Statement::Statement(Id* id, Exp* expression) {
 	}
 	
 	string idType = getIdType(TableStack, id).type;	
-	if ( idType != expression->type.type ) {
+	if ( idType != expression->type ) {
 	
-		if ( idType == "INT" && expression->type.type == "BYTE") {
+		if ( idType == "INT" && expression->type == "BYTE") {
 		  // byte assignment to int is ok
 		} 
 		else {
@@ -447,9 +413,11 @@ Statement::Statement(Id* id, Exp* expression1,Exp* expression2){
 	}
 
 	string idType = getIdType(TableStack, id).type;	//is array!
-	if ( idType != expression2->type.type && expression2->type.isArray == false ) {
+	size_t pos=idType.find("[");
+	string idTemp= idType.substr(0,pos);
+	if ( idTemp != expression2->type ) {
 	
-		if ( idType == "INT" && expression2->type.type == "BYTE") {
+		if ( idTemp == "INT" && expression2->type == "BYTE") {
 		  // byte assignment to int is ok
 		} 
 		else {
@@ -478,9 +446,9 @@ Statement::Statement(Type* type, Id* id, Exp* expression) {
 		exit(0);
 	}
 	
-	if (type->type != expression->type.type) {
+	if (type->type != expression->type) {
 		
-		if (type->type == "INT" && expression->type.type == "BYTE") {
+		if (type->type == "INT" && expression->type == "BYTE") {
 		  // byte assignment to int is ok TODO WHAT ABOUT ARRAYS
 		} 
 		else {
@@ -500,24 +468,23 @@ Statement::Statement(Exp* expression, Statement* ifStatment,
 }
 
 
-ExpList::ExpList(Exp* expression) : types(vector<Type*>()){
+ExpList::ExpList(Exp* expression) {
 
 	this->sons.push_back(expression);
-	this->types = vector<Type*>();
-  	this->types.push_back(&expression->type);
+	this->types = vector<string>();
+  	this->types.push_back(expression->type);
 }
 
 
-ExpList::ExpList(Exp* expression, ExpList* expList) :
-	types(vector<Type*>()){
+ExpList::ExpList(Exp* expression, ExpList* expList){
   
 	this->sons.push_back(expression);
 	this->sons.push_back(expList);
 
-	this->types.push_back(&expression->type);
+	this->types = vector<string>();
+	this->types.push_back(expression->type);
 	for(int i=0; i<expList->types.size(); i++)
 		this->types.push_back(expList->types[i]);
-	
 }
 
 
@@ -577,6 +544,19 @@ Call::Call(Id* id, ExpList* expList) {
 	this->id = id->text;
 }
 
+Exp::Exp() {
+	type="";
+}
+
+Exp::Exp(Id* id,Exp* exp){
+	this->sons.push_back(id);
+	this->sons.push_back(exp);
+	if (!symDeclared(TableStack, id)) {
+		errorUndef(yylineno, id->text);
+		exit(0);
+	}
+}
+
 
 Exp::Exp(String* expression) {
 	/*TODO
@@ -585,8 +565,7 @@ Exp::Exp(String* expression) {
 	exit(0);
 	}*/
 	this->sons.push_back(expression);
-	Type type1(expression->type);
-	this->type = type1;
+	this->type = "STRING";
 }
 
 
@@ -608,17 +587,17 @@ Exp::Exp(Exp* expression1, Binop* binop, Exp* expression2) {
 	this->sons.push_back(binop);
 	this->sons.push_back(expression2);
 	
-	if ((expression1->type.type != "INT" && expression1->type.type != "BYTE") ||
-	  (expression2->type.type != "INT" && expression2->type.type != "BYTE")) {
+	if ((expression1->type != "INT" && expression1->type != "BYTE") ||
+	  (expression2->type != "INT" && expression2->type != "BYTE")) {
 		errorMismatch(yylineno);
 		exit(0);
 	}
 	
-	if ("INT" == expression1->type.type || "INT" == expression2->type.type) {
-		this->type.type = "INT";
+	if ("INT" == expression1->type || "INT" == expression2->type) {
+		this->type = "INT";
 	} 
 	else {
-		this->type.type = "BYTE";
+		this->type = "BYTE";
 	}
 }
 
@@ -631,7 +610,7 @@ Exp::Exp(Id* id) {
 		exit(0);
 	}
 	
-	this->type = getIdType(TableStack, id);
+	this->type = getIdType(TableStack, id).type;
 }
 
 
@@ -646,7 +625,7 @@ Exp::Exp(Num* num, B* byte) {
 	
 	this->sons.push_back(num);
 	this->sons.push_back(byte);
-	this->type = Type("BYTE");
+	this->type = "BYTE";
 	
 	if((num->value)>255){
 		stringstream s;
@@ -674,7 +653,7 @@ Exp::Exp(Not* notOp, Exp* expression2) : type("BOOL"){
 	this->sons.push_back(notOp);
 	this->sons.push_back(expression2);
 	
-	if ((expression2->type.type != "BOOL")) {
+	if ((expression2->type != "BOOL")) {
 		errorMismatch(yylineno);
 		exit(0);
 	}
@@ -688,7 +667,7 @@ Exp::Exp(Exp* expression1, And* andOp, Exp* expression2)
 	this->sons.push_back(andOp);
 	this->sons.push_back(expression2);
 	
-	if ((expression1->type.type != "BOOL") || (expression2->type.type != "BOOL")) {
+	if ((expression1->type != "BOOL") || (expression2->type != "BOOL")) {
 		errorMismatch(yylineno);
 		exit(0);
 	}
@@ -702,7 +681,7 @@ Exp::Exp(Exp* expression1, Or* orOp, Exp* expression2)
 	this->sons.push_back(orOp);
 	this->sons.push_back(expression2);
 	
-if ((expression1->type.type != "BOOL") || (expression2->type.type != "BOOL")) {
+if ((expression1->type != "BOOL") || (expression2->type != "BOOL")) {
 		errorMismatch(yylineno);
 		exit(0);
 	}
@@ -715,8 +694,8 @@ Exp::Exp(Exp* expression1, Relop* relop, Exp* expression2)
 	this->sons.push_back(expression1);
 	this->sons.push_back(relop);
 	this->sons.push_back(expression2);
-	if ((expression1->type.type != "INT" && expression1->type.type != "BYTE") ||
-	  (expression2->type.type != "INT" && expression2->type.type != "BYTE")) {
+	if ((expression1->type != "INT" && expression1->type != "BYTE") ||
+	  (expression2->type != "INT" && expression2->type != "BYTE")) {
 		errorMismatch(yylineno);
 		exit(0);
 	}
