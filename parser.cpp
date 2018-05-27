@@ -289,7 +289,7 @@ FormalDecl::FormalDecl(Type* t, Id* id,Num* num) {
 	this->type = makeArrayType(t->type,num->value);
 }
 
-FormalDecl::FormalDecl(Type* t, Id* id,Num* num, B* byte ){
+FormalDecl::FormalDecl(Type* t, Id* id,Num* num, b* byte ){
 	this->sons.push_back(t);
 	this->sons.push_back(id);
 	this->sons.push_back(num);
@@ -364,10 +364,10 @@ Statement::Statement(Type* type, Id* id, Num* num){
 	}
 }
 
-Statement::Statement(Type* type, Id* id, Num* num,B* b){
+Statement::Statement(Type* type, Id* id, Num* num,b* b1){
 	this->sons.push_back(type);
 	this->sons.push_back(id);
-	this->sons.push_back(b);
+	this->sons.push_back(b1);
 
 	if(num->value <1 || num->value >255){
 		errorInvalidArraySize(yylineno,id->text);
@@ -635,7 +635,7 @@ Exp::Exp(Call* call) {
 }
 
 
-Exp::Exp(Num* num, B* byte) {
+Exp::Exp(Num* num, b* byte) {
 	
 	this->sons.push_back(num);
 	this->sons.push_back(byte);

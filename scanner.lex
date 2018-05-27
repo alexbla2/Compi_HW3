@@ -18,16 +18,16 @@ newline 	(\r\n|\r|\n)
 
 %%
 
-"void"  {yylval=new Void(); 	return VOID; }
-"int"   {yylval=new Int(); 		return INT;}
-"byte"  {yylval= new Byte(); 	return BYTE;}
-"b"     {yylval= new B(); 		return B;}
-"bool"  {yylval= new Bool(); 	return BOOL;}
-"and"   {yylval= new And();		return AND;}
-"or"    {yylval= new Or(); 		return OR;}
-"not"   {yylval= new Not(); 	return NOT;}
-"true"  {yylval= new True(); 	return TRUE;}
-"false" {yylval= new False();	return FALSE;}
+"void"  { 	return VOID; }
+"int"   { 		return INT;}
+"byte"  { 	return BYTE;}
+"b"     { 		return B;}
+"bool"  { 	return BOOL;}
+"and"   {		return AND;}
+"or"    { 		return OR;}
+"not"   { 	return NOT;}
+"true"  { 	return TRUE;}
+"false" {	return FALSE;}
 "return" {	 return RETURN;}
 "if"    {    return IF;}
 "else"  { 	 return ELSE;}
@@ -42,13 +42,13 @@ newline 	(\r\n|\r|\n)
 "[" 	{	 return LBRACK;}
 "]"		{	 return RBRACK;}
 "=" 	{    return ASSIGN;}
-{realop} {yylval= new Relop(); 			return RELOP;}
-{binop}  {yylval= new Binop();  		return BINOP;}
+{realop} { 			return RELOP;}
+{binop}  {  		return BINOP;}
 {id} 	 {yylval= new Id(yytext); 		return ID;}
 {num}    {yylval= new Num(yytext); 		return NUM;}
 \"([^\n\r\"\\]|\\[rnt"\\])+\" {yylval= new String(yytext); return STRING;}				
 {comment} 				;//ignore comments
 {newline}|{whitespace}	;
-.	{errorLex(yylineno);exit(0);};
+.	{output::errorLex(yylineno);exit(0);};
 %%
 

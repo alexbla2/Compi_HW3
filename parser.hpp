@@ -57,7 +57,8 @@ class Byte : public Node {
 	
 };
 
-class B : public Node {};
+class b : public Node {
+};
 
 class Bool : public Node {
 	public:
@@ -201,7 +202,7 @@ class Exp : public Node {
 	Exp(Id* id);
 	Exp(Call* call);
 	Exp(Num* num);
-	Exp(Num* num, B* byte);
+	Exp(Num* num, b* byte);
 	Exp(False* f);
 	Exp(True* t);
 	Exp(Not* notOp, Exp* exp2);
@@ -225,7 +226,7 @@ class Statement : public Node {
 	Statement(Exp* expression, Statement* statement);
 	Statement(Type* type, Id* id, Exp* expression);
 	Statement(Type* type, Id* id, Num* num);					//new cons for Array statement
-	Statement(Type* type, Id* id, Num* num, B* byte); 			//new cons for Array statement
+	Statement(Type* type, Id* id, Num* num, b* byte); 			//new cons for Array statement
 	Statement(Exp* expression, Statement* ifStatment, Statement* elseStatement);
 };
 
@@ -248,7 +249,7 @@ class FormalDecl : public Node {
 
 	//those two are only array option so we dont send a flag with them
 	FormalDecl(Type* type, Id* id,Num* num);						//cons for array : bool a[5]; 5 is num 
-	FormalDecl(Type* type, Id* id,Num* num, B* byte );				//cons for array : bool a[5]; 5 is numB
+	FormalDecl(Type* type, Id* id,Num* num, b* byte );				//cons for array : bool a[5]; 5 is numB
 };
 
 class FormalsList : public Node {
@@ -307,4 +308,18 @@ class Program : public Node {
 	virtual ~Program() {}
 };
 
+void StacksInit(stack<SymbolTable>& StackTable, stack<int>& OffsetStack) ;
+
+void addScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack) ;
+
+void printScope(SymbolTable& scope);
+//need TODO
+void addFormalsToScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
+                       Formals* formals, int lineno); 
+					   
+void newVarScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
+                        string type, Id* id, int lineno,int currentOff) ;
+
+void addFuncToScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
+                   RetType* ret, Id* id, Formals* formals, int lineno);
 #endif

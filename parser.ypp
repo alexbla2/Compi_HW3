@@ -20,6 +20,8 @@ Id* currentFunName;            //current fun name
 Formals* currentFunParams;   //current fun params for type checking
 int whileScopes;             //current number of while scopes 
 
+using namespace output;
+
 %}
 
 //Declarations
@@ -98,7 +100,7 @@ UpdateCurrentFunName: ID {
 }
 
 AddFuncSymbol: {
-    addFuncToScope(SymbolTable, OffsetStack, expectedRet, currentFunName, currentFunParams, yylineno);
+    addFuncToScope(TableStack, OffsetStack, expectedRet, currentFunName, currentFunParams, yylineno);
 }
 
 NewFunctionScope: {
@@ -112,7 +114,7 @@ Formals: {
     currentFunParams = params; //no parameters for the current func
 };
 
-Formals: FormalsList{
+Formals: FormalsList {
     Formals* params = new Formals((FormalsList*)$1);
     $$ = params;
     currentFunParams = params;
@@ -122,9 +124,9 @@ FormalsList: FormalDecl { $$ = new FormalsList((FormalDecl*)$1); }
             | FormalDecl COMMA FormalsList{ $$ = new FormalsList((FormalsList*)$3, (FormalDecl*)$1); } //updates the current func parameters
 ;
 
-FormalDecl: Type ID{ $$ = new FormalDecl((Type*)$1, (Id*)$2); }
+FormalDecl: Type ID { $$ = new FormalDecl((Type*)$1, (Id*)$2); }
             | Type ID LBRACK NUM RBRACK { $$ = new FormalDecl((Type*)$1, (Id*)$2,(Num*)$4); }       //array function 
-            | Type ID LBRACK NUM B RBRACK { $$ = new FormalDecl((Type*)$1, (Id*)$2,(Num*)$4, (B*)$5); }     //array function  
+            | Type ID LBRACK NUM B RBRACK { $$ = new FormalDecl((Type*)$1, (Id*)$2,(Num*)$4, (b*)$5); }     //array function  
 ;
 
 Statements: Statement { $$ = new Statements((Statement*)$1); }
@@ -145,13 +147,15 @@ AddNewScope: {
 //dec a new variable and add it to scope
 Statement: Type ID SC {
     $$ = new Statement((Type*) $1, (Id*)$2);
-    newVarScope(TableStack, OffsetStack, (Type*) $1, (Id*) $2, yylineno,1);
+	string temp = ((Type*) $1)->type;
+    newVarScope(TableStack, OffsetStack, temp, (Id*) $2, yylineno,1);
 };
 
 //dec and assign to a new variable and add it to scope
 Statement: Type ID ASSIGN Exp SC {
     $$ = new Statement((Type*) $1, (Id*)$2, (Exp*)$4);
-    newVarScope(TableStack, OffsetStack, (Type*) $1, (Id*) $2, yylineno,1);
+	string temp = ((Type*) $1)->type;
+    newVarScope(TableStack, OffsetStack, temp, (Id*) $2, yylineno,1);
 };
 
 //dec of a new int array 
@@ -166,7 +170,7 @@ Statement: Type ID LBRACK NUM RBRACK SC {
 Statement: Type ID LBRACK NUM B RBRACK SC {
         string temp = ((Type*)$1)->type;
         int val=((Num*)$4)->value;
-        $$ = new Statement((Type*)$1, (Id*)$2, (Num*)$4, (B*)$5);
+        $$ = new Statement((Type*)$1, (Id*)$2, (Num*)$4, (b*)$5);
         newVarScope(TableStack, OffsetStack, makeArrayType(temp,val), (Id*) $2, yylineno,val);
 };
 
@@ -305,7 +309,7 @@ Exp: LPAREN Exp RPAREN { $$ = new Exp((Exp*)$2); }
     | ID { $$ = new Exp((Id*)$1); }
     | Call { $$ = new Exp((Call*)$1); }
     | NUM { $$ = new Exp((Num*)$1); }
-    | NUM B { $$ = new Exp((Num*)$1, (B*)$2); }
+    | NUM B { $$ = new Exp((Num*)$1, (b*)$2); }
     | STRING { $$ = new Exp((String*)$1,isAprintFunc ); }
     | TRUE { $$ = new Exp((True*)$1); }
     | FALSE { $$ = new Exp((False*)$1); }
