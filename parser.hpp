@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <iostream>
+#include <sstream>
 #include <iterator>
 #include <string>
 #include <vector>
@@ -14,21 +15,19 @@ class Symbol;
 typedef vector<Symbol> SymbolTable;
 extern stack<SymbolTable> TableStack; 
 
-extern int yylineno;
+extern int yylineno;		//extern var from lexer - keeps the current line number
 
 #define YYSTYPE Node*
 
 class Node {
 	public:
 	int linenum;
-	std::vector<Node*> sons;
+	vector<Node*> sons;
 	
-	Node(){
-		linenum=yylineno;
-	}
+	Node(): linenum(yylineno){}
 
 	virtual ~Node() {
-	for (std::vector<Node*>::const_iterator it = sons.begin(); it != sons.end(); it++)
+	for (vector<Node*>::const_iterator it = sons.begin(); it != sons.end(); it++)
 	  delete *it;
 	}
 };
@@ -41,15 +40,20 @@ class Type : public Node {
 	bool isArray;													//new val added to TYPE
 	
 	Type(){};
-	Type(string type): type(type),size(0),isArray(false){}			//cons for name only (not an array)TODO SIZE(1)??
+	Type(string type): type(type),size(1),isArray(false){}			//cons for name only (*not an array*)TODO SIZE(1) - V done maybe we dont need it
+
 	Type(const Type& Ctype) : type(Ctype.type), size(Ctype.size), isArray(Ctype.isArray){}		//Copy cons added
-	Type(Int* type,int typeSize,bool typeIsArray);			//need to change type cons
-	Type(Byte* type,int typeSize,bool typeIsArray);
-	Type(Bool* type,int typeSize,bool typeIsArray);
+	Type(Int* type) : type("INT"),size(1),isArray(false){}
+	Type(Byte* type) : type("BYTE"),size(1),isArray(false){}
+	Type(Bool* type) : type("BOOL"),size(1),isArray(false){}
+
+	Type(Int* type,int typeSize,bool typeIsArray);			//need to change type cons - array cons
+	Type(Byte* type,int typeSize,bool typeIsArray);			//need to change type cons - array cons
+	Type(Bool* type,int typeSize,bool typeIsArray);			//need to change type cons - array cons
 	
 	bool operator==(const Type& t) const{
 	
-		if(this->type == t.type && this->size == t.size)
+		if(this->type == t.type && this->size == t.size && this->isArray == t.isArray)		//added "arrayness" check
 			return true;
 		
 		return false;
@@ -63,18 +67,18 @@ class Symbol{
     Type type;											//now is Type class and not a string
     int offset;
     bool isFunc;
-    std::vector<string> args;
-    string ret;
+    vector<string> args;
+    Type ret;											//changed to Type instead of strign ret type
     
 	Symbol(): name(""), type(Type()), offset(0), isFunc(false){}
     
 	Symbol(const Symbol& sym) : name(sym.name), type(sym.type), offset(sym.offset),
 		isFunc(sym.isFunc), ret(sym.ret), args(sym.args) {}
 	
-    Symbol(string name, Type type ,int offset) : name(name), type(type),
+    Symbol(const string& name, Type type ,int offset) : name(name), type(type),
 		offset(offset), isFunc(false) {}
     
-	Symbol(string name, Type type ,int offset,std::vector<string>& args,string ret ) : 
+	Symbol(const string& name, Type type ,int offset,vector<string>& args,Type ret ) : 		//Type ret !
 		name(name), type(type), offset(offset),args(args),ret(ret), isFunc(true) {}
 };
 
@@ -90,7 +94,7 @@ class Int : public Node {
 	public:
 	Type type;						//now is Type class and not a string
   
-	Int() : type(Type("INT")) {}
+	Int() : type("INT") {}
 
 };
 
@@ -98,7 +102,7 @@ class Byte : public Node {
 	public:
 	Type type;						//now is Type class and not a string
 
-	Byte() : type(Type("BYTE")) {}
+	Byte() : type("BYTE") {}
 	
 };
 
@@ -108,7 +112,7 @@ class Bool : public Node {
 	public:
 	Type type;					//now is Type class and not a string
 
-	Bool() : type(Type("BOOL")) {}
+	Bool() : type("BOOL") {}
 	
 };
 
@@ -149,7 +153,7 @@ class Num : public Node {
     Type type;								//now is Type class and not a string
     int value;
 	
-    Num(char* yytext) : type(Type("INT")), value(atoi(yytext)) {}
+    Num(char* yytext) : type("INT"), value(atoi(yytext)) {}
 	
 };
 
@@ -158,7 +162,7 @@ class String : public Node {//TODO WHY DO WE NEED THIS STRUCT??
     Type type;								//now is Type class and not a string
     string value;
 	
-    String(const char* yytext) :	 type(Type("STRING")), value(yytext) {}
+    String(const char* yytext) :	 type("STRING"), value(yytext) {}
 		
 };
 
@@ -186,9 +190,9 @@ class Exp : public Node {
 
 class ExpList : public Node {
 	public:
-	std::vector<Type> types;							//vector of type classes
+	vector<Type*> types;							//vector of type classes
 
-	ExpList() : types( std::vector<Type>() ) {}
+	ExpList() : types( vector<Type*>() ) {}
 	ExpList(Exp* expression);
 	ExpList(Exp* expression, ExpList* expList);
 };
@@ -245,7 +249,7 @@ class FormalDecl : public Node {
 
 class FormalsList : public Node {
 	public:
-	std::vector<FormalDecl*> list;
+	vector<FormalDecl*> list;
 	
 	FormalsList(){}
 	FormalsList(FormalDecl* formalDecl);
@@ -255,7 +259,7 @@ class FormalsList : public Node {
 
 class Formals : public Node {
 	public:
-	std::vector<FormalDecl*> formals;
+	vector<FormalDecl*> formals;
 
 	Formals(){}
 	Formals(FormalsList* formalsList);
@@ -299,4 +303,4 @@ class Program : public Node {
 	virtual ~Program() {}
 };
 
-
+#endif H_PARSER
