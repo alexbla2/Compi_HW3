@@ -313,7 +313,7 @@ Exp: LPAREN Exp RPAREN { $$ = new Exp((Exp*)$2); }
     | Exp AND Exp { $$ = new Exp((Exp*)$1, (And*)$2, (Exp*)$3); }
     | Exp OR Exp { $$ = new Exp((Exp*)$1,  (Or*)$2,  (Exp*)$3); }
     | Exp RELOP Exp { $$ = new Exp((Exp*)$1,  (Relop*)$2,  (Exp*)$3); }
-};
+;
 
 %%
 
