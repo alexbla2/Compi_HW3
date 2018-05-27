@@ -142,7 +142,7 @@ class Id : public Node {
     public:
     string text;
 	
-    Id(const char* yytext) : text(yytext) {}
+    Id(string yytext) : text(yytext) {}
 	
     virtual ~Id() {}
 	

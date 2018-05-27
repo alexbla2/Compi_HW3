@@ -104,17 +104,21 @@ void newVarScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
 void addFuncToScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
                    RetType* ret, Id* id, Formals* formals, int lineno) {
 
-	if (symDeclared(StackTable, id)) {
+	if (symDeclared(StackTable, id)) {  //func is already declared
 		errorDef(lineno, id->text);
 		exit(0);
 	}
 
 	std::vector<string> argTypes;
 	for (vector<FormalDecl*>::reverse_iterator it = formals->formals.rbegin();
-	   it != formals->formals.rend(); it++) 
-		argTypes.push_back((*it)->type.type);
-
-	Type funcType(makeFunctionType(ret->type.type, argTypes));
+	   it != formals->formals.rend(); it++) {
+		   if((*it)->type.isArray){
+				argTypes.push_back(makeArrayType((*it)->type.type,(*it)->type.size));
+			}else{
+				argTypes.push_back((*it)->type.type);
+			}
+	}
+	Type funcType(makeFunctionType(ret->type.type, argTypes)); //only RetType ret type
 	Symbol sym(id->text, funcType, OffsetStack.top(),argTypes, ret->type);
 	StackTable.top().push_back(sym);
 }
@@ -151,21 +155,50 @@ Symbol getIdSymbol(stack<SymbolTable>& StackTable, string id) {
 }
 
 //TODO
-bool validTypes(vector<string>& types1,vector<string>& types2){
-  
-	if( types1.size() != types2.size() )
-		return false;
+bool validTypes(vector<string>& types,vector<Type*>& types2){
 
-	for(int i=0; i < types1.size(); i++){
-		
-		if(types1[i]!=types2[i]){
-			if(types1[i] == "INT" && types2[i] == "BYTE")
+	vector<string> newVec;
+	string temp;
+	int byteArray[types2.size()];
+	int i=0;
+	for (vector<Type*>::iterator it = types2.begin();
+       it != types2.end(); it++) {
+		   if((*it)->isArray){
+			   temp = makeArrayType((*it)->type,(*it)->size);
+		   }
+		   else{
+			   	temp = (*it)->type;
+		   }
+		   newVec.push_back(temp);
+
+		   if((*it)->type == "BYTE" && (*it)->isArray ==true){
+			   byteArray[i]=(*it)->size;
+		   }else{
+			   byteArray[i]=0;
+		   }
+		   i++;
+	}
+	 if( types.size() != newVec.size() ){
+		return false;
+	 }
+	for(int i=0; i < types.size(); i++){
+
+		if(types[i] != newVec[i]){
+			if(types[i] == "INT" && newVec[i] == "BYTE")
 				continue;
-		
+			//array case
+			int stringSize=types[i].size();
+			int stringSize2=newVec[i].size();
+			if(types[i][0] == 'I' && newVec[i][0] == 'B' && newVec[i][1] == 'Y'){
+				for(int j=4; j<stringSize, j+1 <stringSize2; j++){
+					if(types[i][j] != newVec[i][j+1]){
+						return false;
+					} 
+				}
+			}
 			return false;
 		}
 	}
-
 	return true;
 }
 
@@ -520,8 +553,7 @@ Call::Call(Id* id, ExpList* expList) {
 			errorUndefFunc(yylineno, id->text);
 			exit(0);
 		} 
-		else if (!validTypes(sym.args,expList->types)) {
-
+		if (!validTypes(sym.args,expList->types)) {
 			/*
 			cout<<"expecting:"<<endl;
 			for (vector<string>::iterator i = s.args.begin();

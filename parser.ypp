@@ -85,7 +85,7 @@ RetType: VOID {
     expectedRet = type;      //updates the expected return type to VOID
 };
 
-
+//what about an array retType?
 RetType: Type {
     RetType* type = new RetType((Type*)$1);
     $$ = type;
@@ -98,7 +98,7 @@ UpdateCurrentFunName: ID {
 }
 
 AddFuncSymbol: {
-    addFuncSymbol(SymbolTable, OffsetStack, expectedRet, currentFunName, currentFunParams, yylineno);
+    addFuncToScope(SymbolTable, OffsetStack, expectedRet, currentFunName, currentFunParams, yylineno);
 }
 
 NewFunctionScope: {
@@ -247,6 +247,7 @@ checkExpType: Exp {
         errorMismatch(yylineno);
         exit(0);
     }
+    $$ = $1;
 };
 
 //[X] - checks if the X type is a num  ~~~~~~~~~~~~~~~~~~~ add size!=1 check after we add it!
@@ -255,6 +256,7 @@ checkArrayIndexType: Exp {
         errorMismatch(yylineno);
         exit(0);
     }
+    $$ = $1;
 };
 
 //while scopes counter for the break command
