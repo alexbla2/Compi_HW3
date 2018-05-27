@@ -29,7 +29,7 @@ namespace output{
     void errorUnexpectedBreak(int lineno);
     void errorMainMissing();
     void errorByteTooLarge(int lineno, const string& value);
-    void output::errorInvalidArraySize(int lineno, const string& id);
+    void errorInvalidArraySize(int lineno, const string& id);
 }
 
 #endif

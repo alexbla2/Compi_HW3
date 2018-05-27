@@ -279,7 +279,7 @@ FormalDecl::FormalDecl(Type* t, Id* id,Num* num) {
 	this->sons.push_back(num);
 
 	if(num->value <1 || num->value >255){
-		output::errorInvalidArraySize(yylineno,id->text);
+		errorInvalidArraySize(yylineno,id->text);
 		exit(0);
 	}
 	this->type = makeArrayType(t->type,num->value);
