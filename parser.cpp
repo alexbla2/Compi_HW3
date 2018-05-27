@@ -1,4 +1,5 @@
 #include "parser.hpp"
+#include <cstring>
 using namespace output;
 
 void StacksInit(stack<SymbolTable>& StackTable, stack<int>& OffsetStack) {
@@ -60,8 +61,19 @@ void addScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack) {
 void printScope(SymbolTable& scope){
   
   endScope();
-  for (SymbolTable::iterator it = scope.begin(); it != scope.end(); it++)
+  for (SymbolTable::iterator it = scope.begin(); it != scope.end(); it++){
     printID(it->name, it->offset, it->type);
+}
+}
+
+int getArraySize(string type){
+	int pos1=type.find("[");
+	int pos2=type.find("]");
+	if(pos1 == -1 || pos2 == -1){
+		return 1;
+	}
+	const char* temp=type.substr(pos1+1,pos2-pos1-1).c_str();
+	return atoi(temp);
 }
 
 //need TODO
@@ -80,12 +92,14 @@ void addFormalsToScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
 		}
 		Symbol sym( (*it)->id, (*it)->type, offset);	
 		StackTable.top().push_back(sym);
-		offset--;		
+		offset-=getArraySize((*it)->type);		
   }
 }
 
+
+
 void newVarScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
-                        string type, Id* id, int lineno) {
+                        string type, Id* id, int lineno,int currentOff) {
  
 	if (symDeclared(StackTable, id)) {
 		errorDef(lineno, id->text);
@@ -95,7 +109,7 @@ void newVarScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
 	Symbol sym(id->text, type, OffsetStack.top());    //???????????????
 	StackTable.top().push_back(sym);
 	
-	int newOffset = OffsetStack.top() + 1;
+	int newOffset = OffsetStack.top() + currentOff;
 	OffsetStack.pop();
 	OffsetStack.push(newOffset);
 }
@@ -194,17 +208,7 @@ Program::Program(FuncList* funcs) {
 	this->funcs = funcs->funcs;
 	Symbol mainFuncSymbol = getIdSymbol(TableStack,"main");
 	
-	if(mainFuncSymbol.name!="main"){
-		errorMainMissing();
-		exit(0);
-	}
-
-	if(!(mainFuncSymbol.args.empty())){
-		errorMainMissing();
-		exit(0);
-	}
-	
-	if(mainFuncSymbol.ret !="VOID"){
+	if(mainFuncSymbol.ret !="VOID" ||mainFuncSymbol.name!="main" || !(mainFuncSymbol.args.empty())){
 		errorMainMissing();
 		exit(0);
 	}
@@ -291,7 +295,7 @@ FormalDecl::FormalDecl(Type* t, Id* id,Num* num, B* byte ){
 	this->sons.push_back(num);
 
 	if(num->value <1 || num->value >255){
-		output::errorInvalidArraySize(yylineno,id->text);
+		errorInvalidArraySize(yylineno,id->text);
 		exit(0);
 	}
 
@@ -350,7 +354,7 @@ Statement::Statement(Type* type, Id* id, Num* num){
 	this->sons.push_back(id);
 
 	if(num->value <1 || num->value >255){
-		output::errorInvalidArraySize(yylineno,id->text);
+		errorInvalidArraySize(yylineno,id->text);
 		exit(0);
 	}
 
@@ -366,7 +370,7 @@ Statement::Statement(Type* type, Id* id, Num* num,B* b){
 	this->sons.push_back(b);
 
 	if(num->value <1 || num->value >255){
-		output::errorInvalidArraySize(yylineno,id->text);
+		errorInvalidArraySize(yylineno,id->text);
 		exit(0);
 	}
 
@@ -414,6 +418,10 @@ Statement::Statement(Id* id, Exp* expression1,Exp* expression2){
 
 	string idType = getIdType(TableStack, id).type;	//is array!
 	size_t pos=idType.find("[");
+	if(pos == -1){
+		errorMismatch(yylineno);
+		exit(0);
+	}
 	string idTemp= idType.substr(0,pos);
 	if ( idTemp != expression2->type ) {
 	
@@ -501,7 +509,7 @@ Call::Call(Id* id) {
 		errorUndefFunc(yylineno, id->text);
 		exit(0);
 	} 
-	else if (!sym.args.empty()) {
+	else if (!sym.args.empty()) { //func without parameters
 		errorPrototypeMismatch(yylineno, id->text, sym.args);
 		exit(0);
 	}
@@ -555,6 +563,13 @@ Exp::Exp(Id* id,Exp* exp){
 		errorUndef(yylineno, id->text);
 		exit(0);
 	}
+	string t=getIdType(TableStack,id).type;
+	int pos=t.find("[");
+	if(pos == -1){				//not an array
+		errorMismatch(yylineno);													//TODO
+		exit(0);
+	}
+	this->type=t.substr(0,pos);
 }
 
 
@@ -592,7 +607,7 @@ Exp::Exp(Exp* expression1, Binop* binop, Exp* expression2) {
 		exit(0);
 	}
 	
-	if ("INT" == expression1->type || "INT" == expression2->type) {
+	if (expression1->type  == "INT"  || expression2->type =="INT" ) {
 		this->type = "INT";
 	} 
 	else {

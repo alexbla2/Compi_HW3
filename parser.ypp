@@ -74,7 +74,7 @@ Funcs: FuncDecl Funcs { $$ = new FuncList((FuncList*)$2, (Func*)$1); }
 FuncDecl: RetType UpdateCurrentFunName LPAREN Formals AddFuncSymbol RPAREN NewFunctionScope LBRACE Statements RBRACE {  //moved NewFunctionScope one right
     Func* func = new Func((RetType*)$1, (Id*)$2, (Formals*)$4, (Statements*)$9);
     $$ = func;
-    printScope(scopes.top());
+    printScope(TableStack.top());
     OffsetStack.pop();
     TableStack.pop();
 };
@@ -134,8 +134,8 @@ Statements: Statement { $$ = new Statements((Statement*)$1); }
 Statement: LBRACE AddNewScope Statements RBRACE {
     $$ = new Statement((Statements*)$3);
     printScope(TableStack.top());
-    scopes.pop();
-    offsets.pop();
+    TableStack.pop();
+    OffsetStack.pop();
 };
 
 AddNewScope: {
@@ -145,33 +145,29 @@ AddNewScope: {
 //dec a new variable and add it to scope
 Statement: Type ID SC {
     $$ = new Statement((Type*) $1, (Id*)$2);
-    newVarScope(TableStack, OffsetStack, (Type*) $1, (Id*) $2, yylineno);
+    newVarScope(TableStack, OffsetStack, (Type*) $1, (Id*) $2, yylineno,1);
 };
 
 //dec and assign to a new variable and add it to scope
 Statement: Type ID ASSIGN Exp SC {
     $$ = new Statement((Type*) $1, (Id*)$2, (Exp*)$4);
-    newVarScope(TableStack, OffsetStack, (Type*) $1, (Id*) $2, yylineno);
+    newVarScope(TableStack, OffsetStack, (Type*) $1, (Id*) $2, yylineno,1);
 };
 
 //dec of a new int array 
 Statement: Type ID LBRACK NUM RBRACK SC {
-    Type temp(*((Type*)$1));
+    string temp = ((Type*)$1)->type;
     int val=((Num*)$4)->value;
-    temp.isArray=true;
-    temp.size=val;
-    $$ = new Statement(&temp, (Id*)$2, (Num*)$4);
-    newVarScope(TableStack, OffsetStack, &temp, (Id*) $2, yylineno);
+    $$ = new Statement((Type*)$1, (Id*)$2, (Num*)$4);
+    newVarScope(TableStack, OffsetStack, makeArrayType(temp,val), (Id*) $2, yylineno,val);
 };
 
 //dec of a new byte array       
 Statement: Type ID LBRACK NUM B RBRACK SC {
-        Type temp(*((Type*)$1));
+        string temp = ((Type*)$1)->type;
         int val=((Num*)$4)->value;
-        temp.isArray=true;
-        temp.size=val;
-        $$ = new Statement(&temp, (Id*)$2, (Num*)$4, (B*)$5);
-        newVarScope(TableStack, OffsetStack, &temp, (Id*) $2, yylineno);
+        $$ = new Statement((Type*)$1, (Id*)$2, (Num*)$4, (B*)$5);
+        newVarScope(TableStack, OffsetStack, makeArrayType(temp,val), (Id*) $2, yylineno,val);
 };
 
 //assign to variable
@@ -250,9 +246,9 @@ checkExpType: Exp {
     $$ = $1;
 };
 
-//[X] - checks if the X type is a num  ~~~~~~~~~~~~~~~~~~~ add size!=1 check after we add it!
+//[X] - checks if the X type is a num 
 checkArrayIndexType: Exp {
-    if((((Exp*)$1)->type.type != "INT") && (((Exp*)$1)->type.type != "BYTE")){
+    if((((Exp*)$1)->type != "INT") && (((Exp*)$1)->type != "BYTE")){
         errorMismatch(yylineno);
         exit(0);
     }
