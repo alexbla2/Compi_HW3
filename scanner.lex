@@ -19,16 +19,16 @@ newline 	(\r\n|\r|\n)
 %%
 
 "void"  { 	return VOID; }
-"int"   { 		return INT;}
+"int"   { 	return INT;}
 "byte"  { 	return BYTE;}
-"b"     { 		return B;}
+"b"     { 	return B;}
 "bool"  { 	return BOOL;}
-"and"   {		return AND;}
-"or"    { 		return OR;}
+"and"   {	return AND;}
+"or"    { 	return OR;}
 "not"   { 	return NOT;}
 "true"  { 	return TRUE;}
 "false" {	return FALSE;}
-"return" {	 return RETURN;}
+"return" {	return RETURN;}
 "if"    {    return IF;}
 "else"  { 	 return ELSE;}
 "while" { 	 return WHILE;}
@@ -42,8 +42,8 @@ newline 	(\r\n|\r|\n)
 "[" 	{	 return LBRACK;}
 "]"		{	 return RBRACK;}
 "=" 	{    return ASSIGN;}
-{realop} { 			return RELOP;}
-{binop}  {  		return BINOP;}
+{realop} { 	 return RELOP;}
+{binop}  {   return BINOP;}
 {id} 	 {yylval= new Id(yytext); 		return ID;}
 {num}    {yylval= new Num(yytext); 		return NUM;}
 \"([^\n\r\"\\]|\\[rnt"\\])+\" {yylval= new String(yytext); return STRING;}				

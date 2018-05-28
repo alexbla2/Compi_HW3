@@ -16,7 +16,7 @@
                 "showOutput": "always",
     
                 // No args
-                "args": ["-o","hw3", "*.cpp"],
+                "args": ["-o", "hw3","*.cpp","*.c"],
     
                 // Use the standard less compilation problem matcher.
                 "problemMatcher": {

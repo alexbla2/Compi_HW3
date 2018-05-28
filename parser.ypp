@@ -4,6 +4,7 @@
 
 #include "output.hpp"
 #include "parser.hpp"
+#include <stdio.h>
 
 int yylex();
 void yyerror(const char*);
@@ -64,13 +65,17 @@ using namespace output;
 Program: Funcs {
     Node* prog = new Program((FuncList*)$1);
     printScope(TableStack.top());
+    printf("1\n");
     OffsetStack.pop();
+    printf("2\n");
     TableStack.pop();
+    printf("3\n");
     delete prog;
 };
 
-Funcs: FuncDecl Funcs { $$ = new FuncList((FuncList*)$2, (Func*)$1); }
-       | /*epsilon*/ { $$ = new FuncList(); }
+Funcs: /*epsilon*/ { $$ = new FuncList(); }
+       | FuncDecl Funcs { $$ = new FuncList((FuncList*)$2, (Func*)$1); }
+        
 ;
 
 FuncDecl: RetType UpdateCurrentFunName LPAREN Formals AddFuncSymbol RPAREN NewFunctionScope LBRACE Statements RBRACE {  //moved NewFunctionScope one right
@@ -108,7 +113,7 @@ NewFunctionScope: {
     addFormalsToScope(TableStack, OffsetStack, currentFunParams, yylineno); 
 };
 
-Formals: {
+Formals: /*epsilon*/ {
     Formals* params = new Formals();
     $$ = params;
     currentFunParams = params; //no parameters for the current func

@@ -236,7 +236,7 @@ id(id->text), ret(ret->type), formals(formals) {
 }
 
 
-RetType::RetType(Void* voidNode) : type("Void"){
+RetType::RetType(Void* voidNode) : type("VOID"){
 	
 	this->sons.push_back(voidNode);
 }
@@ -287,6 +287,7 @@ FormalDecl::FormalDecl(Type* t, Id* id,Num* num) {
 		exit(0);
 	}
 	this->type = makeArrayType(t->type,num->value);
+	this->id = id->text;
 }
 
 FormalDecl::FormalDecl(Type* t, Id* id,Num* num, b* byte ){
@@ -300,6 +301,7 @@ FormalDecl::FormalDecl(Type* t, Id* id,Num* num, b* byte ){
 	}
 
 	this->type = makeArrayType(t->type,num->value);
+	this->id = id->text;
 }
 
 
@@ -382,13 +384,13 @@ Statement::Statement(Type* type, Id* id, Num* num,b* b1){
 
 
 
-
+//for array var
 Statement::Statement(Id* id, Exp* expression) {
 	
 	this->sons.push_back(id);
 	this->sons.push_back(expression);
 	
-	if (!symDeclared(TableStack, id)) {
+	if (!symDeclared(TableStack, id)) {			//check a[0] if a func given a[5]
 		errorUndef(yylineno, id->text);
 		exit(0);
 	}
@@ -556,9 +558,12 @@ Exp::Exp() {
 	type="";
 }
 
+
+
 Exp::Exp(Id* id,Exp* exp){
 	this->sons.push_back(id);
 	this->sons.push_back(exp);
+
 	if (!symDeclared(TableStack, id)) {
 		errorUndef(yylineno, id->text);
 		exit(0);
