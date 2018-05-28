@@ -1,0 +1,28 @@
+---end scope---
+magic BYTE[6] 401
+help INT 407
+---end scope---
+magic BYTE[5] 401
+wild INT 406
+---end scope---
+help BOOL 401
+---end scope---
+magic INT[70] 401
+help BYTE[69] 471
+gold INT[1] 540
+---end scope---
+x INT[250] -250
+y INT[70] -320
+z BYTE -321
+w BOOL[128] -449
+h INT[200] 0
+m BOOL[1] 200
+j BYTE[200] 201
+magic BYTE[42] 401
+---end scope---
+magic BOOL[255] 0
+---end scope---
+print (STRING)->VOID 0
+printi (INT)->VOID 0
+secret (INT[250],INT[70],BYTE,BOOL[128])->INT 0
+main ()->VOID 0

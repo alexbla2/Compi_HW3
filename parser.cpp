@@ -80,7 +80,7 @@ int getArraySize(string type){
 void addFormalsToScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
                        Formals* formals, int lineno) {
   
-  int offset = -1;
+  int offset = 0;
   
   for (vector<FormalDecl*>::reverse_iterator it = formals->formals.rbegin();
        it != formals->formals.rend(); it++) {
@@ -90,9 +90,10 @@ void addFormalsToScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
 			errorDef(lineno, id.text);
 			exit(0);
 		}
+		offset-=getArraySize((*it)->type);
 		Symbol sym( (*it)->id, (*it)->type, offset);	
 		StackTable.top().push_back(sym);
-		offset-=getArraySize((*it)->type);		
+		
   }
 }
 
@@ -202,13 +203,23 @@ bool validTypes(vector<string>& types1,vector<string>& types2){
 	return true;
 }
 
-Program::Program(FuncList* funcs) {
+// Program::Program() { //FuncList* funcs
 	
-	this->sons.push_back(funcs);
-	this->funcs = funcs->funcs;
-	Symbol mainFuncSymbol = getIdSymbol(TableStack,"main");
+// 	////this->sons.push_back(funcs);
+// 	//this->funcs = funcs->funcs;
+// 	Symbol mainFuncSymbol = getIdSymbol(TableStack,"main");
 	
-	if(mainFuncSymbol.ret !="VOID" ||mainFuncSymbol.name!="main" || !(mainFuncSymbol.args.empty())){
+// 	if(mainFuncSymbol.ret !="VOID" ||mainFuncSymbol.name!="main" || !(mainFuncSymbol.args.empty())){
+// 		errorMainMissing();
+// 		exit(0);
+// 	}
+// }
+
+void checkMain(){
+
+	Symbol mainSym = getIdSymbol(TableStack,"main");
+	
+	if(mainSym.ret !="VOID" ||mainSym.name!="main" || !(mainSym.args.empty())){
 		errorMainMissing();
 		exit(0);
 	}
@@ -220,8 +231,8 @@ FuncList::FuncList() : funcs( vector<Func*>() ){}  // for epsilon rule
 
 FuncList::FuncList(FuncList* list, Func* func) : funcs( vector<Func*>(list->funcs) ){
   
-	this->sons.push_back(list);
-	this->sons.push_back(func);
+	////this->sons.push_back(list);
+	////this->sons.push_back(func);
 	this->funcs.push_back(func);
 }
 
@@ -229,34 +240,34 @@ FuncList::FuncList(FuncList* list, Func* func) : funcs( vector<Func*>(list->func
 Func::Func(RetType* ret, Id* id, Formals* formals, Statements* statements) :
 id(id->text), ret(ret->type), formals(formals) {
 	
-	this->sons.push_back(ret);
-	this->sons.push_back(id);
-	this->sons.push_back(formals);
-	this->sons.push_back(statements);
+	////this->sons.push_back(ret);
+	//this->sons.push_back(id);
+	//this->sons.push_back(formals);
+	//this->sons.push_back(statements);
 }
 
 
 RetType::RetType(Void* voidNode) : type("VOID"){
 	
-	this->sons.push_back(voidNode);
+	//this->sons.push_back(voidNode);
 }
 
 
 RetType::RetType(Type* t) : type(t->type){
 	
-	this->sons.push_back(t);
+	//this->sons.push_back(t);
 }
 
 
 Formals::Formals(FormalsList* formalsList) : formals(formalsList->list){
 	
-	this->sons.push_back(formalsList);
+	//this->sons.push_back(formalsList);
 }
 
 
 FormalsList::FormalsList(FormalDecl* formalDecl) : list(vector<FormalDecl*>()){
 	
-	this->sons.push_back(formalDecl);
+	//this->sons.push_back(formalDecl);
 	this->list.push_back(formalDecl);
 }
 
@@ -264,23 +275,25 @@ FormalsList::FormalsList(FormalDecl* formalDecl) : list(vector<FormalDecl*>()){
 FormalsList::FormalsList(FormalsList* formalsList, FormalDecl* formalsDecl) :
 list(vector<FormalDecl*>(formalsList->list)) {
   
-	this->sons.push_back(formalsList);
-	this->sons.push_back(formalsDecl);
+	//this->sons.push_back(formalsList);
+	//this->sons.push_back(formalsDecl);
 	this->list.push_back(formalsDecl);
 }
 
 
 FormalDecl::FormalDecl(Type* t, Id* id) : type(t->type), id(id->text){
   
-	this->sons.push_back(t);
-	this->sons.push_back(id);
+	//this->sons.push_back(t);
+	//this->sons.push_back(id);
 }
 
 //added for array
 FormalDecl::FormalDecl(Type* t, Id* id,Num* num) {
-	this->sons.push_back(t);
-	this->sons.push_back(id);
-	this->sons.push_back(num);
+	//this->sons.push_back(t);
+	//this->sons.push_back(id);
+	//this->sons.push_back(num);
+
+	//cout << id->text << endl;
 
 	if(num->value <1 || num->value >255){
 		errorInvalidArraySize(yylineno,id->text);
@@ -291,12 +304,19 @@ FormalDecl::FormalDecl(Type* t, Id* id,Num* num) {
 }
 
 FormalDecl::FormalDecl(Type* t, Id* id,Num* num, b* byte ){
-	this->sons.push_back(t);
-	this->sons.push_back(id);
-	this->sons.push_back(num);
+	//this->sons.push_back(t);
+	//this->sons.push_back(id);
+	//this->sons.push_back(num);
+
+	if(num->value == 0){
+		errorInvalidArraySize(yylineno,id->text);
+		exit(0);
+	}
 
 	if(num->value <1 || num->value >255){
-		errorInvalidArraySize(yylineno,id->text);
+		stringstream s;
+		s << num->value;
+		errorByteTooLarge(yylineno,string(s.str()));
 		exit(0);
 	}
 
@@ -310,39 +330,39 @@ FormalDecl::FormalDecl(Type* t, Id* id,Num* num, b* byte ){
 
 Statements::Statements(Statement* statement) {
 	
-	this->sons.push_back(statement);
+	//this->sons.push_back(statement);
 }
 
 
 Statements::Statements(Statements* statements, Statement* statement) {
  
-	this->sons.push_back(statements);
-	this->sons.push_back(statement);
+	//this->sons.push_back(statements);
+	//this->sons.push_back(statement);
 }
 
 
 Statement::Statement(Statements* statements) {
 
-	this->sons.push_back(statements);
+	//this->sons.push_back(statements);
 }
 
 
 Statement::Statement(Exp* expression) { 
 
-	this->sons.push_back(expression);
+	//this->sons.push_back(expression);
 }
 
 
 Statement::Statement(Call* call) {
 	
-	this->sons.push_back(call);
+	//this->sons.push_back(call);
 }
 
 
 Statement::Statement(Type* type, Id* id) {
   
-	this->sons.push_back(type);
-	this->sons.push_back(id);
+	//this->sons.push_back(type);
+	//this->sons.push_back(id);
 	
 	if (symDeclared(TableStack, id)) {			//maybe export into outer func
 		errorDef(yylineno, id->text);
@@ -352,8 +372,8 @@ Statement::Statement(Type* type, Id* id) {
 
 //array
 Statement::Statement(Type* type, Id* id, Num* num){
-	this->sons.push_back(type);
-	this->sons.push_back(id);
+	//this->sons.push_back(type);
+	//this->sons.push_back(id);
 
 	if(num->value <1 || num->value >255){
 		errorInvalidArraySize(yylineno,id->text);
@@ -367,12 +387,20 @@ Statement::Statement(Type* type, Id* id, Num* num){
 }
 
 Statement::Statement(Type* type, Id* id, Num* num,b* b1){
-	this->sons.push_back(type);
-	this->sons.push_back(id);
-	this->sons.push_back(b1);
+	//this->sons.push_back(type);
+	//this->sons.push_back(id);
+	//this->sons.push_back(b1);
+
+
+	if(num->value == 0){
+		errorInvalidArraySize(yylineno,id->text);
+		exit(0);
+	}
 
 	if(num->value <1 || num->value >255){
-		errorInvalidArraySize(yylineno,id->text);
+		stringstream s;
+		s << num->value;
+		errorByteTooLarge(yylineno,string(s.str()));
 		exit(0);
 	}
 
@@ -387,14 +415,19 @@ Statement::Statement(Type* type, Id* id, Num* num,b* b1){
 //for array var
 Statement::Statement(Id* id, Exp* expression) {
 	
-	this->sons.push_back(id);
-	this->sons.push_back(expression);
+	//this->sons.push_back(id);
+	//this->sons.push_back(expression);
 	
 	if (!symDeclared(TableStack, id)) {			//check a[0] if a func given a[5]
 		errorUndef(yylineno, id->text);
 		exit(0);
 	}
-	
+
+	Symbol sym =getIdSymbol(TableStack,id->text);
+	if(sym.isFunc){
+		errorUndef(yylineno, id->text);
+		exit(0);
+	}
 	string idType = getIdType(TableStack, id).type;	
 	if ( idType != expression->type ) {
 	
@@ -409,9 +442,9 @@ Statement::Statement(Id* id, Exp* expression) {
 }
 
 Statement::Statement(Id* id, Exp* expression1,Exp* expression2){
-	this->sons.push_back(id);
-	this->sons.push_back(expression1);
-	this->sons.push_back(expression2);
+	//this->sons.push_back(id);
+	//this->sons.push_back(expression1);
+	//this->sons.push_back(expression2);
 
 	if (!symDeclared(TableStack, id)) {
 		errorUndef(yylineno, id->text);
@@ -440,16 +473,16 @@ Statement::Statement(Id* id, Exp* expression1,Exp* expression2){
 
 Statement::Statement(Exp* expression, Statement* statement) {
 	
-	this->sons.push_back(expression);
-	this->sons.push_back(statement);
+	//this->sons.push_back(expression);
+	//this->sons.push_back(statement);
 }
 
 
 Statement::Statement(Type* type, Id* id, Exp* expression) {
 	
-	this->sons.push_back(type);
-	this->sons.push_back(id);
-	this->sons.push_back(expression);
+	//this->sons.push_back(type);
+	//this->sons.push_back(id);
+	//this->sons.push_back(expression);
 	
 	if (symDeclared(TableStack, id)) {
 		errorDef(yylineno, id->text);
@@ -472,15 +505,15 @@ Statement::Statement(Type* type, Id* id, Exp* expression) {
 Statement::Statement(Exp* expression, Statement* ifStatment,
                      Statement* elseStatement) {
   
-	this->sons.push_back(expression);
-	this->sons.push_back(ifStatment);
-	this->sons.push_back(elseStatement);
+	//this->sons.push_back(expression);
+	//this->sons.push_back(ifStatment);
+	//this->sons.push_back(elseStatement);
 }
 
 
 ExpList::ExpList(Exp* expression) {
 
-	this->sons.push_back(expression);
+	//this->sons.push_back(expression);
 	this->types = vector<string>();
   	this->types.push_back(expression->type);
 }
@@ -488,8 +521,8 @@ ExpList::ExpList(Exp* expression) {
 
 ExpList::ExpList(Exp* expression, ExpList* expList){
   
-	this->sons.push_back(expression);
-	this->sons.push_back(expList);
+	//this->sons.push_back(expression);
+	//this->sons.push_back(expList);
 
 	this->types = vector<string>();
 	this->types.push_back(expression->type);
@@ -500,9 +533,9 @@ ExpList::ExpList(Exp* expression, ExpList* expList){
 
 Call::Call(Id* id) {
 	
-	this->sons.push_back(id);
+	//this->sons.push_back(id);
 	if (!symDeclared(TableStack, id)) {
-		errorUndef(yylineno, id->text);
+		errorUndefFunc(yylineno, id->text);
 		exit(0);
 	}
 
@@ -521,8 +554,8 @@ Call::Call(Id* id) {
 
 Call::Call(Id* id, ExpList* expList) {
 	
-	this->sons.push_back(id);
-	this->sons.push_back(expList);
+	//this->sons.push_back(id);
+	//this->sons.push_back(expList);
 	
 	if (symDeclared(TableStack, id)) {
 		Symbol sym = getIdSymbol(TableStack, id->text);
@@ -561,8 +594,8 @@ Exp::Exp() {
 
 
 Exp::Exp(Id* id,Exp* exp){
-	this->sons.push_back(id);
-	this->sons.push_back(exp);
+	//this->sons.push_back(id);
+	//this->sons.push_back(exp);
 
 	if (!symDeclared(TableStack, id)) {
 		errorUndef(yylineno, id->text);
@@ -583,28 +616,28 @@ Exp::Exp(String* expression,bool isAprintFunc) {
 		errorMismatch(yylineno);
 		exit(0);
 	}
-	this->sons.push_back(expression);
+	//this->sons.push_back(expression);
 	this->type = "STRING";
 }
 
 
 Exp::Exp(Num* expression) : type("INT"){
 	
-  this->sons.push_back(expression);
+  //this->sons.push_back(expression);
 }
 
 
 Exp::Exp(Exp* expression) : type(expression->type){
 	
-  this->sons.push_back(expression);
+  //this->sons.push_back(expression);
 }
 
 
 Exp::Exp(Exp* expression1, Binop* binop, Exp* expression2) {
 	
-	this->sons.push_back(expression1);
-	this->sons.push_back(binop);
-	this->sons.push_back(expression2);
+	//this->sons.push_back(expression1);
+	//this->sons.push_back(binop);
+	//this->sons.push_back(expression2);
 	
 	if ((expression1->type != "INT" && expression1->type != "BYTE") ||
 	  (expression2->type != "INT" && expression2->type != "BYTE")) {
@@ -623,7 +656,7 @@ Exp::Exp(Exp* expression1, Binop* binop, Exp* expression2) {
 
 Exp::Exp(Id* id) {
   
-	this->sons.push_back(id);
+	//this->sons.push_back(id);
 	if (!symDeclared(TableStack, id)) {
 		errorUndef(yylineno, id->text);
 		exit(0);
@@ -635,15 +668,15 @@ Exp::Exp(Id* id) {
 
 Exp::Exp(Call* call) {
 	
-	this->sons.push_back(call);
+	//this->sons.push_back(call);
 	this->type = getIdSymbol(TableStack, call->id).ret;
 }
 
 
 Exp::Exp(Num* num, b* byte) {
 	
-	this->sons.push_back(num);
-	this->sons.push_back(byte);
+	//this->sons.push_back(num);
+	//this->sons.push_back(byte);
 	this->type = "BYTE";
 	
 	if((num->value)>255){
@@ -657,20 +690,20 @@ Exp::Exp(Num* num, b* byte) {
 
 Exp::Exp(False* f) : type("BOOL"){
  
-	this->sons.push_back(f);
+	//this->sons.push_back(f);
 }
 
 
 Exp::Exp(True* t) : type("BOOL"){
  
-	this->sons.push_back(t);
+	//this->sons.push_back(t);
 }
 
 
 Exp::Exp(Not* notOp, Exp* expression2) : type("BOOL"){
  
-	this->sons.push_back(notOp);
-	this->sons.push_back(expression2);
+	//this->sons.push_back(notOp);
+	//this->sons.push_back(expression2);
 	
 	if ((expression2->type != "BOOL")) {
 		errorMismatch(yylineno);
@@ -682,9 +715,9 @@ Exp::Exp(Not* notOp, Exp* expression2) : type("BOOL"){
 Exp::Exp(Exp* expression1, And* andOp, Exp* expression2) 
 	: type("BOOL"){
  
-	this->sons.push_back(expression1);
-	this->sons.push_back(andOp);
-	this->sons.push_back(expression2);
+	//this->sons.push_back(expression1);
+	//this->sons.push_back(andOp);
+	//this->sons.push_back(expression2);
 	
 	if ((expression1->type != "BOOL") || (expression2->type != "BOOL")) {
 		errorMismatch(yylineno);
@@ -696,9 +729,9 @@ Exp::Exp(Exp* expression1, And* andOp, Exp* expression2)
 Exp::Exp(Exp* expression1, Or* orOp, Exp* expression2)
 	: type("BOOL"){
  
-	this->sons.push_back(expression1);
-	this->sons.push_back(orOp);
-	this->sons.push_back(expression2);
+	//this->sons.push_back(expression1);
+	//this->sons.push_back(orOp);
+	//this->sons.push_back(expression2);
 	
 if ((expression1->type != "BOOL") || (expression2->type != "BOOL")) {
 		errorMismatch(yylineno);
@@ -710,9 +743,9 @@ if ((expression1->type != "BOOL") || (expression2->type != "BOOL")) {
 Exp::Exp(Exp* expression1, Relop* relop, Exp* expression2) 
 	: type("BOOL"){
  
-	this->sons.push_back(expression1);
-	this->sons.push_back(relop);
-	this->sons.push_back(expression2);
+	//this->sons.push_back(expression1);
+	//this->sons.push_back(relop);
+	////this->sons.push_back(expression2);
 	if ((expression1->type != "INT" && expression1->type != "BYTE") ||
 	  (expression2->type != "INT" && expression2->type != "BYTE")) {
 		errorMismatch(yylineno);

@@ -1,0 +1,117 @@
+#!/bin/bash
+
+flex scanner.lex
+bison -d parser.ypp
+g++ -o hw3 *.c *.cpp
+
+tests_won=0
+tests_lost=0
+
+function compareFiles {
+file=$1
+#./hw3 < "Input/$file.in" >& "ExpectedResult/$file.out"
+./hw3 < "Input/$file.in" >& "ActualResult/$file.res"
+diff "ActualResult/$file.res" "ExpectedResult/$file.out"
+DIFF=$(diff "ActualResult/$file.res" "ExpectedResult/$file.out")
+if [[ "$DIFF" != "" ]]; then #If true, then test$i.res and test$i.out are different files :(
+	let tests_lost++
+	echo "You have failed in the folowing test: $file :(" 
+else
+	let tests_won++
+fi
+}
+
+function printSummary {
+if(( $tests_lost == 0 )); then
+	echo "You passed all $tests_won tests :), congratulations!!!"
+	echo "If you have additional ideas for tests, feel free to share"
+	echo "and contribute :)"
+else
+	echo "You passed $tests_won tests, but failed in $tests_lost"
+	echo "New FAQ has been opened in drive link to organize the answers"
+	echo "to all of your questions :)"
+fi
+}
+
+compareFiles "AnotherCheckingOfExpInIf"
+compareFiles "ArrayCannotBeEqualToItself"
+compareFiles "ArrayCannotHaveSize0"
+compareFiles "ArrayCannotHaveSize256"
+compareFiles "ArraySizeMismatch"
+compareFiles "AvengersWithoutAMain"
+compareFiles "BasicPrinting"
+compareFiles "BeingEqualToMyselfIsNotOkay"
+compareFiles "BinopAndRelop"
+compareFiles "BreakBeforeSC"
+compareFiles "ByteArrayAsIntArray"
+compareFiles "ByteIsLessThan256"
+compareFiles "CallBeforeSC"
+compareFiles "CallingAFunction"
+compareFiles "CompositionOfFunctions"
+compareFiles "DollarsAreNotWelcomeInOurFlex"
+compareFiles "EmptyFile"
+compareFiles "IfAndElseDoTheSame"
+compareFiles "IllegalBreak"
+compareFiles "IncompleteSyntaxArray"
+compareFiles "IncompleteYetArrayInvalidSize"
+compareFiles "VarParameterIsAlreadyAMethod"
+compareFiles "LexicalBeforeNoVoidMain"
+compareFiles "LonelyIf"
+compareFiles "LonelyIfRequiresBool"
+compareFiles "MainIsALonelyWolf"
+compareFiles "MainTriangle"
+compareFiles "ManyFunctions"
+compareFiles "MethodCannotBeSetAValue"
+compareFiles "MethodRecursion"
+compareFiles "MethodWithoutRbrace"
+compareFiles "NegativeNumber"
+compareFiles "OnlyOneGladiator"
+compareFiles "ReportDefVar"
+compareFiles "ReportUndefVar"
+compareFiles "ReturnByteIsAnInt"
+compareFiles "ReturnSyntaxError"
+compareFiles "ReturnTypeNotVoidCheckBeforeSC"
+compareFiles "ReturnVoidCheckBeforeSC"
+compareFiles "SCAfterIllegalTypeMismatch"
+compareFiles "SCAgainAfterIllegalTypeMismatch"
+compareFiles "SmileForever"
+compareFiles "StringSyntaxError"
+compareFiles "UndefinedFunction"
+compareFiles "WhileBeforeRparen"
+compareFiles "WhileExpectsBool"
+compareFiles "boolMain"
+compareFiles "byteMain"
+compareFiles "intMain"
+compareFiles "mainWithParameters"
+compareFiles "t1"
+compareFiles "t2"
+compareFiles "MethodWasNotDefinedYet" # New test :)
+compareFiles "TemporaryScopeIsForgottenInBrotherScopes" # New test :)
+compareFiles "VariableDefinedButNotAsAMethod" # New test :)
+compareFiles "ByteAndByteBinop" # No error
+compareFiles "ByteAndIntBinop" # Error report 
+compareFiles "IntAndByteBinop" # Error report
+compareFiles "IntAndIntBinop" # Error report
+compareFiles "InvokingAMethodWithWrongParameter" # Not first time
+compareFiles "LocalBigByteLiteralInArrayDefinition" # New 25 May
+compareFiles "LocalSmallByteLiteralInArrayDefinition" # New 25 May
+compareFiles "LocalBigIntLiteralInArrayDefinition" # New 25 May
+compareFiles "LocalSmallIntLiteralInArrayDefinition" # New 25 May
+compareFiles "LocalBigByteLiteralInArrayAccess" # New 25 May
+compareFiles "LocalSmallByteLiteralInArrayAccess" # New 25 May
+compareFiles "LocalBigIntLiteralInArrayAccess" # New 25 May
+compareFiles "LocalSmallIntLiteralInArrayAccess" # New 25 May
+compareFiles "ParameterBigByteLiteralInArrayDefinition" # New 25 May
+compareFiles "ParameterSmallByteLiteralInArrayDefinition" # New 25 May
+compareFiles "ParameterBigIntLiteralInArrayDefinition" # New 25 May
+compareFiles "ParameterSmallIntLiteralInArrayDefinition" # New 25 May
+compareFiles "parameterNameIsB" # New 26 May
+compareFiles "methodNameIsB" # New 26 May
+compareFiles "parameterDefinedTwice" # New 26 May
+compareFiles "nameIsBothOfMethodAndParameter" # New 26 May
+compareFiles "ArrayAccessesItselfIsImpossible" # New 27 May credited to Dor Braunstein & Shani Keller
+compareFiles "ArrayElementIsNotAnArray" # New 27 May credited to Dor Braunstein & Shani Keller
+compareFiles "ReturningAnArrayElement" # New 27 May
+compareFiles "ReturningArray" # New 27 May
+
+printSummary

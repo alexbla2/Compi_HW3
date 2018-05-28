@@ -37,7 +37,7 @@ using namespace output;
 %right NOT;
 %token TRUE;
 %token FALSE;
-%token RETURN;
+%right RETURN;
 %token WHILE;
 %token BREAK;
 %token SC;
@@ -63,19 +63,19 @@ using namespace output;
 //Rules
 
 Program: Funcs {
-    Node* prog = new Program((FuncList*)$1);
+    //Node* prog = new Program(); //(FuncList*)$1
+    checkMain();
     printScope(TableStack.top());
-    printf("1\n");
+    //printf("1\n");
     OffsetStack.pop();
-    printf("2\n");
+    //printf("2\n");
     TableStack.pop();
-    printf("3\n");
-    delete prog;
+    //printf("3\n");
+    //delete (FuncList*)$1;
 };
 
-Funcs: /*epsilon*/ { $$ = new FuncList(); }
-       | FuncDecl Funcs { $$ = new FuncList((FuncList*)$2, (Func*)$1); }
-        
+Funcs:  /*epsilon*/ { $$ = new FuncList();  }
+       | FuncDecl Funcs { $$ = new FuncList((FuncList*)$2, (Func*)$1);  } 
 ;
 
 FuncDecl: RetType UpdateCurrentFunName LPAREN Formals AddFuncSymbol RPAREN NewFunctionScope LBRACE Statements RBRACE {  //moved NewFunctionScope one right
@@ -206,14 +206,19 @@ Statement: RETURN SC {
 
 //return with a type - accord to the func type -- check salso size for array type  -need to update!
 Statement: RETURN Exp SC {
+    //std::cout << "ex: " << expectedRet->type << " act: " << ((Exp*)$2)->type <<std::endl ;
+   
     if(expectedRet->type != ((Exp*)$2)->type){
-        if((expectedRet->type != "INT" && ((Exp*)$2)->type != "BYTE") ) { //allowed cast from byte to int
+        if((expectedRet->type == "INT" && ((Exp*)$2)->type == "BYTE") ) { //allowed cast from byte to int
+
+        }else{
             errorMismatch(yylineno);
             exit(0);
         }
     }
+
     if(expectedRet->type != "VOID"){ //not a void func    
-    $$ = new Statement((Exp*)$2);
+        $$ = new Statement((Exp*)$2);
     }
 };
 

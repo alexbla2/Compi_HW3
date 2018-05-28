@@ -1,0 +1,8 @@
+---end scope---
+x INT[5] -5
+y INT[5] 0
+z INT[5] 5
+w BYTE[64] 10
+---end scope---
+x INT[5] 0
+line 19: array w declared with invalid size

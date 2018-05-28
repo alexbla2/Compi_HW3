@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/hw3.exe",
-            "args": ["<", "t1.in"],
+            "args": ["< t1.in"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

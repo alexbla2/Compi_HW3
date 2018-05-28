@@ -28,7 +28,7 @@ newline 	(\r\n|\r|\n)
 "not"   { 	return NOT;}
 "true"  { 	return TRUE;}
 "false" {	return FALSE;}
-"return" {	return RETURN;}
+"return" {	return RETURN; }
 "if"    {    return IF;}
 "else"  { 	 return ELSE;}
 "while" { 	 return WHILE;}

@@ -22,14 +22,14 @@ extern int yylineno;		//extern var from lexer - keeps the current line number
 class Node {
 	public:
 	int linenum;
-	vector<Node*> sons;
+	//vector<Node*> sons;
 	
 	Node(): linenum(yylineno){}
 
-	virtual ~Node() {
-	for (vector<Node*>::const_iterator it = sons.begin(); it != sons.end(); it++)
-	  delete *it;
-	}
+	virtual ~Node() {}
+	// for (vector<Node*>::const_iterator it = sons.begin(); it != sons.end(); it++)
+	//   delete *it;
+	// }
 };
 
 
@@ -124,20 +124,20 @@ class Or : public Node {};
 class Not : public Node {};
 class True : public Node {};
 class False : public Node {};
-class Return : public Node {};
-class If : public Node {};
-class Else : public Node {};
-class While : public Node {};
-class Break : public Node {};
-class Sc : public Node {};
-class Comma : public Node {};
-class Lparen : public Node {};
-class Rparen : public Node {};
-class Lbrace : public Node {};
-class Rbrace : public Node {};
-class Lbrack : public Node {};
-class Rbrack : public Node {};
-class Assign : public Node {};
+// class Return : public Node {};
+// class If : public Node {};
+// class Else : public Node {};
+// class While : public Node {};
+// class Break : public Node {};
+// class Sc : public Node {};
+// class Comma : public Node {};
+// class Lparen : public Node {};
+// class Rparen : public Node {};
+// class Lbrace : public Node {};
+// class Rbrace : public Node {};
+// class Lbrack : public Node {};
+// class Rbrack : public Node {};
+// class Assign : public Node {};
 class Relop : public Node {};
 class Binop : public Node {};
 
@@ -296,17 +296,11 @@ class FuncList : public Node {
 	FuncList();
 	FuncList(FuncList* list, Func* func);  //recursion
 
-	virtual ~FuncList() {}
+	virtual ~FuncList() {
+	}
 };
 
-class Program : public Node {
-	public:
-	vector<Func*> funcs;
-
-	Program(FuncList* funcs);
-
-	virtual ~Program() {}
-};
+void checkMain();
 
 void StacksInit(stack<SymbolTable>& StackTable, stack<int>& OffsetStack) ;
 
