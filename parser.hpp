@@ -1,13 +1,14 @@
 #ifndef H_PARSER
 #define H_PARSER
 
-#include <stdlib.h>
-#include <iostream>
+
 #include <sstream>
 #include <iterator>
 #include <string>
 #include <vector>
 #include <stack>
+#include <stdlib.h>
+#include <iostream>
 #include "output.hpp"
 
 using namespace std;
@@ -19,166 +20,105 @@ extern int yylineno;		//extern var from lexer - keeps the current line number
 
 #define YYSTYPE Node*
 
-class Node {
-	public:
-	int linenum;
-	//vector<Node*> sons;
-	
-	Node(): linenum(yylineno){}
-
-	virtual ~Node() {}
-	// for (vector<Node*>::const_iterator it = sons.begin(); it != sons.end(); it++)
-	//   delete *it;
-	// }
+class Symbol{
+    public:
+    string name;
+    string type;											
+    int offset;
+    bool isFunc;
+    vector<string> args;
+    string ret;											
+    
+	Symbol(): name(""), type(""), offset(0), isFunc(false){}
+	Symbol(const Symbol& sym) : name(sym.name), type(sym.type), offset(sym.offset),
+		isFunc(sym.isFunc), ret(sym.ret), args(sym.args) {}
+    Symbol(string name, string type ,int offset) : name(name), type(type),
+		offset(offset), isFunc(false) {}
+	Symbol(string name, string type ,int offset,vector<string>& args,string ret ) : 		
+		name(name), type(type), offset(offset),args(args),ret(ret), isFunc(true) {}
 };
 
-
-class Void : public Node {
+class Node {
 	public:
-	string type;
+	int lineNum;
 
-	Void() : type("Void"){}
-	
+	Node(): lineNum(yylineno){}
+	virtual ~Node() {}
 };
 
 class Int : public Node {
 	public:
-	string type;						//now is Type class and not a string
+	string type;						
   
 	Int() : type("INT") {}
-
 };
 
 class Byte : public Node {
 	public:
-	string type;						//now is Type class and not a string
+	string type;						
 
 	Byte() : type("BYTE") {}
-	
-};
-
-class b : public Node {
 };
 
 class Bool : public Node {
 	public:
-	string type;					//now is Type class and not a string
+	string type;					
 
 	Bool() : type("BOOL") {}
 	
 };
 
-//the class is now more complicated - need to update its CONS accord.
-class Type : public Node {
+class Void : public Node {
 	public:
 	string type;
-	// int size; 														//new val added to TYPE
-	// bool isArray;													//new val added to TYPE
+
+	Void() : type("VOID"){}
+};
+
+class Type : public Node {
+	public:
+	string type;													
 	
 	Type(): type(""){}
-	Type(string t): type(t){}			//cons for name only (*not an array*)TODO SIZE(1) - V done maybe we dont need it
+	Type(string t): type(t){}			
+	Type(const Type& Ctype) : type(Ctype.type){}		//Copy cons
 
-	Type(const Type& Ctype) : type(Ctype.type){}		//Copy cons added
-	// Type(Int* t) : type("INT"),size(1),isArray(false){}
-	// Type(Byte* t) : type("BYTE"),size(1),isArray(false){}
-	// Type(Bool* t) : type("BOOL"),size(1),isArray(false){}
-
-	// Type(Int* t,int typeSize,bool typeIsArray);			//need to change type cons - array cons
-	// Type(Byte* t,int typeSize,bool typeIsArray);			//need to change type cons - array cons
-	// Type(Bool* t,int typeSize,bool typeIsArray);			//need to change type cons - array cons
-	
-	// bool operator==(const Type& t) const{
-	
-	// 	if(this->type == t.type && this->size == t.size && this->isArray == t.isArray)		//added "arrayness" check
-	// 		return true;
-		
-	// 	return false;
-	// }
-	
 };
 
-class Symbol{
+class String : public Node {
     public:
-    string name;
-    string type;											//now is Type class and not a string
-    int offset;
-    bool isFunc;
-    vector<string> args;
-    string ret;											//changed to Type instead of strign ret type
-    
-	Symbol(): name(""), type(""), offset(0), isFunc(false){}
-    
-	Symbol(const Symbol& sym) : name(sym.name), type(sym.type), offset(sym.offset),
-		isFunc(sym.isFunc), ret(sym.ret), args(sym.args) {}
+    string type;								
+    string value;
 	
-    Symbol(string name, string type ,int offset) : name(name), type(type),
-		offset(offset), isFunc(false) {}
-    
-	Symbol(string name, string type ,int offset,vector<string>& args,string ret ) : 		//Type ret !
-		name(name), type(type), offset(offset),args(args),ret(ret), isFunc(true) {}
-};
-
-
-class And : public Node {};
-class Or : public Node {};
-class Not : public Node {};
-class True : public Node {};
-class False : public Node {};
-// class Return : public Node {};
-// class If : public Node {};
-// class Else : public Node {};
-// class While : public Node {};
-// class Break : public Node {};
-// class Sc : public Node {};
-// class Comma : public Node {};
-// class Lparen : public Node {};
-// class Rparen : public Node {};
-// class Lbrace : public Node {};
-// class Rbrace : public Node {};
-// class Lbrack : public Node {};
-// class Rbrack : public Node {};
-// class Assign : public Node {};
-class Relop : public Node {};
-class Binop : public Node {};
-
-class Id : public Node {
-    public:
-    string text;
-	
-    Id(char* yytext) : text(string(yytext)) {}
-	Id(string yytext) : text(yytext) {}
-	
-    virtual ~Id() {}
-	
+    String(const char* yytext) : type("STRING"), value(yytext) {}
 };
 
 class Num : public Node {
     public:
-    string type;								//now is Type class and not a string
+    string type;								
     int value;
 	
     Num(char* yytext) : type("INT"), value(atoi(yytext)) {}
-	
-};
-
-class String : public Node {//TODO WHY DO WE NEED THIS STRUCT??
-    public:
-    string type;								//now is Type class and not a string
-    string value;
-	
-    String(const char* yytext) :	 type("STRING"), value(yytext) {}
-		
 };
 
 class Exp;
-
 class ExpList : public Node {
 	public:
 	vector<string> types;							//vector of type classes
 
 	ExpList() : types( vector<string>() ) {}
-	ExpList(Exp* expression);
-	ExpList(Exp* expression, ExpList* expList);
+	ExpList(Exp* exp);
+	ExpList(Exp* exp, ExpList* expList);
+};
+
+class Id : public Node {
+    public:
+    string name;
+	
+    Id(char* yytext) : name(string(yytext)) {}
+	Id(string yytext) : name(yytext) {}
+    virtual ~Id() {}
+	
 };
 
 class Call : public Node {
@@ -190,49 +130,45 @@ class Call : public Node {
 	Call(Id* id, ExpList* expList);
 };
 
+class b : public Node {};
+
 class Exp : public Node {
 	public:
-	string type;												//now has a TYPE *class* - and not string !! (need to change accord)
+	string type;											
 
 	Exp();
 	Exp(String* s,bool isAPrintFunc);
 	Exp(Exp* exp);
-	Exp(Exp* exp1, Binop* binop, Exp* exp2);
-	Exp(Id* id,Exp* exp);							//new cons for Array exp !				
+	Exp(Id* id,Exp* exp);											
 	Exp(Id* id);
 	Exp(Call* call);
 	Exp(Num* num);
 	Exp(Num* num, b* byte);
-	Exp(False* f);
-	Exp(True* t);
-	Exp(Not* notOp, Exp* exp2);
-	Exp(Exp* expression1, And* andOp, Exp* expression2);
-	Exp(Exp* exp1, Or* orOp, Exp* exp2);
-	Exp(Exp* exp1, Relop* relop, Exp* exp2);
+	Exp(string flag);
+	Exp(string operand, Exp* exp);
+	Exp(Exp* exp1,Exp* exp2,string operand);
 };
 
 class Statements;
-
 class Statement : public Node {
 	public:
 	
 	Statement(){}
-	Statement(Statements* statements);
 	Statement(Call* call);
-	Statement(Exp* expression);
-	Statement(Type* type, Id* id);
-	Statement(Id* id, Exp* expression);
-	Statement(Id* id, Exp* expression1,Exp* expression2);		//cons for Array assignment (example: a[7]=4)
-	Statement(Exp* expression, Statement* statement);
-	Statement(Type* type, Id* id, Exp* expression);
-	Statement(Type* type, Id* id, Num* num);					//new cons for Array statement
-	Statement(Type* type, Id* id, Num* num, b* byte); 			//new cons for Array statement
-	Statement(Exp* expression, Statement* ifStatment, Statement* elseStatement);
+	Statement(Exp* exp);
+	Statement(Statements* statements);
+	Statement(Type* t, Id* id);
+	Statement(Type* t, Id* id, Exp* exp);
+	Statement(Type* t, Id* id, Num* num);					
+	Statement(Type* t, Id* id, Num* num, b* byte); 
+	Statement(Id* id, Exp* exp);
+	Statement(Id* id, Exp* exp1,Exp* exp2);		
+	Statement(Exp* exp, Statement* statement);
+	Statement(Exp* exp, Statement* statement1, Statement* statement2);	//for if + else func
 };
 
 class Statements : public Node {
 	public:
-
 	Statements(){}
 	Statements(Statement* statement);
 	Statements(Statements* statements, Statement* statement); //recursion
@@ -241,25 +177,22 @@ class Statements : public Node {
 
 class FormalDecl : public Node {
 	public:
-	string type;											//now is Type class and not a string
+	string type;											
 	string id;
 
 	FormalDecl(){}
-	FormalDecl(Type* type, Id* id);
-
-	//those two are only array option so we dont send a flag with them
-	FormalDecl(Type* type, Id* id,Num* num);						//cons for array : bool a[5]; 5 is num 
-	FormalDecl(Type* type, Id* id,Num* num, b* byte );				//cons for array : bool a[5]; 5 is numB
+	FormalDecl(Type* t, Id* id);
+	FormalDecl(Type* t, Id* id,Num* num);						//cons for array : bool a[5]; 5 is num 
+	FormalDecl(Type* t, Id* id,Num* num, b* byte );				//cons for array : bool a[5]; 5 is numB
 };
 
 class FormalsList : public Node {
 	public:
-	vector<FormalDecl*> list;
+	vector<FormalDecl*> formalsVec;
 	
 	FormalsList(){}
-	FormalsList(FormalDecl* formalDecl);
 	FormalsList(FormalsList* formalsList, FormalDecl* formalsDecl); //recursion
-
+	FormalsList(FormalDecl* formalDecl);
 };
 
 class Formals : public Node {
@@ -272,48 +205,43 @@ class Formals : public Node {
 
 class RetType : public Node {
 	public:
-	string type;							//now is Type class and not a string
+	string type;							
 
 	RetType(){}
-	RetType(Void* voidNode);
-	RetType(Type* type);
+	RetType(Type* t);
+	RetType(Void* vNode);
 };
 
 class Func : public Node {
 	public:
 	string id;
-	string ret;						//now is Type class and not a string
+	string funcRet;						
 	Formals* formals;
 	
 	Func(){}
 	Func(RetType* ret, Id* id, Formals* formals, Statements* statements);
 };
 
-class FuncList : public Node {
+class Funcs : public Node {
 	public:
-	vector<Func*> funcs;
+	vector<Func*> funcsList;
 	
-	FuncList();
-	FuncList(FuncList* list, Func* func);  //recursion
-
-	virtual ~FuncList() {
+	Funcs();
+	Funcs(Funcs* list, Func* func);  //recursion
+	virtual ~Funcs() {
 	}
 };
 
+//Auxiliry functions
+
 void checkMain();
-
+void checkByteToLarge(int numVal);
 void StacksInit(stack<SymbolTable>& StackTable, stack<int>& OffsetStack) ;
+void addNewScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack) ;
+void scopePrint(SymbolTable& scope);
+void finishScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack);
+void addFuncSymScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,Formals* formals, int lineno); 				   
+void newVarScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,string type, Id* id, int lineno,int currentOff) ;
+void addFuncToScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,RetType* ret, Id* id, Formals* formals, int lineno);
 
-void addScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack) ;
-
-void printScope(SymbolTable& scope);
-//need TODO
-void addFormalsToScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
-                       Formals* formals, int lineno); 
-					   
-void newVarScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
-                        string type, Id* id, int lineno,int currentOff) ;
-
-void addFuncToScope(stack<SymbolTable>& StackTable, stack<int>& OffsetStack,
-                   RetType* ret, Id* id, Formals* formals, int lineno);
 #endif

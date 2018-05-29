@@ -15,11 +15,14 @@ extern int yylineno;    //line number from lex for Errors
 
 std::stack<SymbolTable> TableStack;
 std::stack<int> OffsetStack;
-bool isAprintFunc;           //special case for the print function
+
 RetType* expectedRet;        ////current fun expected return type for checking
 Id* currentFunName;            //current fun name
 Formals* currentFunParams;   //current fun params for type checking
+
+bool isAprintFunc;           //special case for the print function
 int whileScopes;             //current number of while scopes 
+int derivesNum;
 
 using namespace output;
 
@@ -48,8 +51,8 @@ using namespace output;
 %token IF;
 %left LBRACE;
 %left RBRACE;
-%left LBRACK;       //check where and which token L/R BRACK needs
-%left RBRACK;       //^same^
+%left LBRACK;       
+%left RBRACK;       
 %right ASSIGN;
 %nonassoc RELOP;
 %left BINOP;
@@ -63,136 +66,133 @@ using namespace output;
 //Rules
 
 Program: Funcs {
-    //Node* prog = new Program(); //(FuncList*)$1
     checkMain();
-    printScope(TableStack.top());
-    //printf("1\n");
-    OffsetStack.pop();
-    //printf("2\n");
-    TableStack.pop();
-    //printf("3\n");
-    //delete (FuncList*)$1;
-};
-
-Funcs:  /*epsilon*/ { $$ = new FuncList();  }
-       | FuncDecl Funcs { $$ = new FuncList((FuncList*)$2, (Func*)$1);  } 
+    finishScope(TableStack,OffsetStack);}
 ;
 
-FuncDecl: RetType UpdateCurrentFunName LPAREN Formals AddFuncSymbol RPAREN NewFunctionScope LBRACE Statements RBRACE {  //moved NewFunctionScope one right
+Funcs:  /*epsilon*/ {
+     $$ = new Funcs();
+     if(derivesNum == 0 && yychar != 0){
+        errorSyn(yylineno); 
+        exit(0);
+     }
+};
+
+Funcs: FuncDecl Funcs { $$ = new Funcs((Funcs*)$2, (Func*)$1);  } 
+
+FuncDecl: RetType UpdateCurrentFunName LPAREN Formals AddFuncScope RPAREN OpenFunScope LBRACE Statements RBRACE {
+    derivesNum--;
     Func* func = new Func((RetType*)$1, (Id*)$2, (Formals*)$4, (Statements*)$9);
     $$ = func;
-    printScope(TableStack.top());
-    OffsetStack.pop();
-    TableStack.pop();
-};
+    finishScope(TableStack,OffsetStack);}
+;
 
 RetType: VOID {
     RetType* type = new RetType((Void*)$1);
-    $$ = type;
     expectedRet = type;      //updates the expected return type to VOID
-};
+    $$ = type;}
+;
 
 //what about an array retType?
 RetType: Type {
     RetType* type = new RetType((Type*)$1);
-    $$ = type;
     expectedRet =type;      //updates the expected return type accord.
-};
+    $$ = type;}
+;
 
 UpdateCurrentFunName: ID {
+    derivesNum++;
     currentFunName = (Id*)$1;
     $$ = $1;
 }
 
-AddFuncSymbol: {
+AddFuncScope: {
     addFuncToScope(TableStack, OffsetStack, expectedRet, currentFunName, currentFunParams, yylineno);
 }
 
-NewFunctionScope: {
-    addScope(TableStack, OffsetStack);    //opens a new scope for function
-    addFormalsToScope(TableStack, OffsetStack, currentFunParams, yylineno); 
+OpenFunScope: {
+    addNewScope(TableStack, OffsetStack);    //opens a new scope for function
+    addFuncSymScope(TableStack, OffsetStack, currentFunParams, yylineno); 
 };
 
 Formals: /*epsilon*/ {
     Formals* params = new Formals();
-    $$ = params;
     currentFunParams = params; //no parameters for the current func
-};
+    $$ = params;}
+;
 
 Formals: FormalsList {
     Formals* params = new Formals((FormalsList*)$1);
-    $$ = params;
     currentFunParams = params;
-};
+    $$ = params;}
+;
 
 FormalsList: FormalDecl { $$ = new FormalsList((FormalDecl*)$1); }
             | FormalDecl COMMA FormalsList{ $$ = new FormalsList((FormalsList*)$3, (FormalDecl*)$1); } //updates the current func parameters
 ;
 
 FormalDecl: Type ID { $$ = new FormalDecl((Type*)$1, (Id*)$2); }
-            | Type ID LBRACK NUM RBRACK { $$ = new FormalDecl((Type*)$1, (Id*)$2,(Num*)$4); }       //array function 
-            | Type ID LBRACK NUM B RBRACK { $$ = new FormalDecl((Type*)$1, (Id*)$2,(Num*)$4, (b*)$5); }     //array function  
+            | Type ID LBRACK NUM RBRACK { $$ = new FormalDecl((Type*)$1, (Id*)$2 ,(Num*)$4); }       //array function 
+            | Type ID LBRACK NUM B RBRACK { $$ = new FormalDecl((Type*)$1, (Id*)$2 ,(Num*)$4, (b*)$5); }     //array function  
 ;
 
-Statements: Statement { $$ = new Statements((Statement*)$1); }
-            | Statements Statement { $$ = new Statements((Statements*)$1, (Statement*)$2); }
+Statements: Statement { $$ = new Statements( (Statement*)$1); }
+            | Statements Statement { $$ = new Statements( (Statements*)$1, (Statement*)$2); }
 ;
 
 Statement: LBRACE AddNewScope Statements RBRACE {
-    $$ = new Statement((Statements*)$3);
-    printScope(TableStack.top());
-    TableStack.pop();
-    OffsetStack.pop();
-};
+    $$ = new Statement( (Statements*)$3);
+    finishScope(TableStack,OffsetStack);}
+;
 
 AddNewScope: {
-    addScope(TableStack, OffsetStack);     //opens a new scope
-};
+    addNewScope(TableStack, OffsetStack);}
+;
 
 //dec a new variable and add it to scope
 Statement: Type ID SC {
-    $$ = new Statement((Type*) $1, (Id*)$2);
-	string temp = ((Type*) $1)->type;
-    newVarScope(TableStack, OffsetStack, temp, (Id*) $2, yylineno,1);
-};
+    $$ = new Statement( (Type*) $1, (Id*)$2);
+	string temp = ( (Type*) $1)->type;
+    newVarScope(TableStack, OffsetStack, temp, (Id*) $2, yylineno,1);}
+;
 
 //dec and assign to a new variable and add it to scope
 Statement: Type ID ASSIGN Exp SC {
-    $$ = new Statement((Type*) $1, (Id*)$2, (Exp*)$4);
-	string temp = ((Type*) $1)->type;
-    newVarScope(TableStack, OffsetStack, temp, (Id*) $2, yylineno,1);
-};
+    $$ = new Statement( (Type*) $1, (Id*)$2, (Exp*)$4);
+	string temp = ( (Type*) $1)->type;
+    newVarScope(TableStack, OffsetStack, temp, (Id*) $2, yylineno,1);}
+;
 
 //dec of a new int array 
 Statement: Type ID LBRACK NUM RBRACK SC {
-    string temp = ((Type*)$1)->type;
-    int val=((Num*)$4)->value;
-    $$ = new Statement((Type*)$1, (Id*)$2, (Num*)$4);
-    newVarScope(TableStack, OffsetStack, makeArrayType(temp,val), (Id*) $2, yylineno,val);
-};
+    string temp = ( (Type*)$1)->type;
+    int val=( (Num*)$4)->value;
+    $$ = new Statement( (Type*)$1, (Id*)$2, (Num*)$4);
+    newVarScope(TableStack, OffsetStack, makeArrayType(temp,val), (Id*) $2, yylineno,val);}
+;
 
 //dec of a new byte array       
 Statement: Type ID LBRACK NUM B RBRACK SC {
-        string temp = ((Type*)$1)->type;
-        int val=((Num*)$4)->value;
-        $$ = new Statement((Type*)$1, (Id*)$2, (Num*)$4, (b*)$5);
-        newVarScope(TableStack, OffsetStack, makeArrayType(temp,val), (Id*) $2, yylineno,val);
-};
+        string temp = ( (Type*)$1)->type;
+        int val=( (Num*)$4)->value;
+        $$ = new Statement( (Type*)$1, (Id*)$2, (Num*)$4, (b*)$5);
+        newVarScope(TableStack, OffsetStack, makeArrayType(temp,val), (Id*) $2, yylineno,val);}
+;
 
 //assign to variable
 Statement: ID ASSIGN Exp SC {
-    $$ = new Statement((Id*)$1, (Exp*)$3);
-};
+    $$ = new Statement( (Id*)$1, (Exp*)$3);}
+;
 
 //assign to an array 
-Statement: ID LBRACK checkArrayIndexType RBRACK ASSIGN Exp SC {
-    $$ = new Statement((Id*)$1, (Exp*)$3, (Exp*)$6);
-};
+Statement: ID checkArrayIndexType ASSIGN Exp SC {
+    $$ = new Statement( (Id*)$1, (Exp*)$2, (Exp*)$4);}
+;
 
 //function call
 Statement: Call SC {
-    $$ = new Statement((Call*)$1);
-};
+    $$ = new Statement( (Call*)$1);}
+;
 
 //simple return - only in void functions! check salso size for array type
 Statement: RETURN SC {
@@ -206,73 +206,64 @@ Statement: RETURN SC {
 
 //return with a type - accord to the func type -- check salso size for array type  -need to update!
 Statement: RETURN Exp SC {
-    //std::cout << "ex: " << expectedRet->type << " act: " << ((Exp*)$2)->type <<std::endl ;
-   
-    if(expectedRet->type != ((Exp*)$2)->type){
+    if(expectedRet->type == "VOID"){
+        errorMismatch(yylineno);
+        exit(0);
+    }
+    if(expectedRet->type != ( (Exp*)$2)->type){
         if((expectedRet->type == "INT" && ((Exp*)$2)->type == "BYTE") ) { //allowed cast from byte to int
-
         }else{
             errorMismatch(yylineno);
             exit(0);
         }
     }
-
-    if(expectedRet->type != "VOID"){ //not a void func    
-        $$ = new Statement((Exp*)$2);
-    }
 };
 
 //if statement
-Statement: IF LPAREN checkExpType RPAREN AddNewScope Statement ExitScope {
-    $$ = new Statement((Exp*)$3, (Statement*)$6);
-};
+Statement: IF LPAREN checkExpType AddNewScope Statement ExitScope {
+    $$ = new Statement( (Exp*)$2, (Statement*)$4);}
+;
 
 //exits the current scope
 ExitScope: {
-    printScope(TableStack.top());
-    OffsetStack.pop();
-    TableStack.pop();
-};
+    finishScope(TableStack,OffsetStack);}
+;
 
 //if statement with an else
-Statement: IF LPAREN checkExpType RPAREN AddNewScope Statement ExitScope ELSE AddNewScope Statement {
-    $$ = new Statement((Exp*)$3, (Statement*)$6, (Statement*)$10);
-    printScope(TableStack.top());
-    OffsetStack.pop();
-    TableStack.pop();
-};
+Statement: IF LPAREN checkExpType AddNewScope Statement ExitScope ELSE AddNewScope Statement {
+    $$ = new Statement( (Exp*)$2, (Statement*)$4, (Statement*)$8);
+    finishScope(TableStack,OffsetStack);}
+;
 
 //while loop
-Statement: WHILE AddWhileScope LPAREN checkExpType RPAREN AddNewScope Statement {
-    $$ = new Statement((Exp*)$4, (Statement*)$7);
-    printScope(TableStack.top());
-    OffsetStack.pop();
-    TableStack.pop();
-    whileScopes--;  //exits the while scope
-};
+Statement: WHILE AddWhileScope LPAREN checkExpType AddNewScope Statement {
+    $$ = new Statement( (Exp*)$3, (Statement*)$5);
+    finishScope(TableStack,OffsetStack);
+    whileScopes--; }
+;
 
 //check if the expression is BOOL  in IF/While
-checkExpType: Exp {
-    if(((Exp*)$1)->type != "BOOL"){
+checkExpType: Exp RPAREN {
+    if( ((Exp*)$1)->type != "BOOL"){
         errorMismatch(yylineno);
         exit(0);
     }
-    $$ = $1;
-};
+    $$ = $1;}
+;
 
 //[X] - checks if the X type is a num 
-checkArrayIndexType: Exp {
-    if((((Exp*)$1)->type != "INT") && (((Exp*)$1)->type != "BYTE")){
+checkArrayIndexType: LBRACK Exp RBRACK {
+    if( (((Exp*)$2)->type != "INT") && (((Exp*)$2)->type != "BYTE")){
         errorMismatch(yylineno);
         exit(0);
     }
-    $$ = $1;
-};
+    $$ = $2;}
+;
 
 //while scopes counter for the break command
 AddWhileScope: {
-    whileScopes++;
-};
+    whileScopes++;}
+;
 
 //break command
 Statement: BREAK SC {
@@ -286,25 +277,25 @@ Statement: BREAK SC {
 
 //checks function id for a special case of print function
 FuncName: ID {
-    $$ = $1;
-    if(((Id*)$1)->text == "print"){   //checks if the func is *print* for special case (- can accept string after it
+    if( ((Id*)$1)->name == "print"){   //checks if the func is *print* for special case (- can accept string after it
         isAprintFunc = true;                
     }
+    $$ = $1;
 };
 
 //calls function with parameters
 Call: FuncName LPAREN ExpList RPAREN {
-    $$ = new Call((Id*)$1, (ExpList*)$3);
-    isAprintFunc = false;        //back to default status        
-};
+    $$ = new Call( (Id*)$1, (ExpList*)$3);
+    isAprintFunc = false; }       //back to default status        
+;
 
 //calls function without parameters
 Call: FuncName LPAREN RPAREN {
-    $$ = new Call((Id*)$1);
-};
+    $$ = new Call( (Id*)$1);}
+;
 
-ExpList: Exp { $$ = new ExpList((Exp*)$1); }
-        | Exp COMMA ExpList { $$ = new ExpList((Exp*)$1, (ExpList*)$3); }
+ExpList: Exp { $$ = new ExpList( (Exp*)$1); }
+        | Exp COMMA ExpList { $$ = new ExpList( (Exp*)$1, (ExpList*)$3); }
 ;
 
 Type: INT  { $$ = new Type("INT"); }
@@ -313,20 +304,20 @@ Type: INT  { $$ = new Type("INT"); }
 ;
 
 
-Exp: LPAREN Exp RPAREN { $$ = new Exp((Exp*)$2); }
-    | ID LBRACK checkArrayIndexType RBRACK { $$ = new Exp((Id*)$1, (Exp*)$3); }        //array var 
-    | Exp BINOP Exp { $$ = new Exp((Exp*)$1, (Binop*)$2, (Exp*)$3); }
-    | ID { $$ = new Exp((Id*)$1); }
-    | Call { $$ = new Exp((Call*)$1); }
-    | NUM { $$ = new Exp((Num*)$1); }
-    | NUM B { $$ = new Exp((Num*)$1, (b*)$2); }
-    | STRING { $$ = new Exp((String*)$1,isAprintFunc ); }
-    | TRUE { $$ = new Exp((True*)$1); }
-    | FALSE { $$ = new Exp((False*)$1); }
-    | NOT Exp { $$ = new Exp((Not*)$1, (Exp*)$2); }
-    | Exp AND Exp { $$ = new Exp((Exp*)$1, (And*)$2, (Exp*)$3); }
-    | Exp OR Exp { $$ = new Exp((Exp*)$1,  (Or*)$2,  (Exp*)$3); }
-    | Exp RELOP Exp { $$ = new Exp((Exp*)$1,  (Relop*)$2,  (Exp*)$3); }
+Exp: LPAREN Exp RPAREN { $$ = new Exp( (Exp*)$2); }
+    | ID checkArrayIndexType { $$ = new Exp( (Id*)$1, (Exp*)$2); }        //array var 
+    | ID { $$ = new Exp( (Id*)$1); }
+    | Call { $$ = new Exp( (Call*)$1); }
+    | NUM { $$ = new Exp( (Num*)$1); }
+    | NUM B { $$ = new Exp( (Num*)$1, (b*)$2); }
+    | STRING { $$ = new Exp( (String*)$1,isAprintFunc ); }
+    | TRUE { $$ = new Exp("TRUE"); }
+    | FALSE { $$ = new Exp("FALSE"); }
+    | NOT Exp { $$ = new Exp("NOT", (Exp*)$2); }
+    | Exp AND Exp { $$ = new Exp( (Exp*)$1 ,(Exp*)$3,"AND"); }
+    | Exp OR Exp { $$ = new Exp( (Exp*)$1 ,(Exp*)$3,"OR"); }
+    | Exp BINOP Exp { $$ = new Exp( (Exp*)$1 ,(Exp*)$3,"BINOP"); }
+    | Exp RELOP Exp { $$ = new Exp((Exp*)$1 ,(Exp*)$3,"RELOP"); }
 ;
 
 %%
@@ -340,6 +331,7 @@ void yyerror(const char*) {
 
 int main(){
     whileScopes=0;
+    derivesNum=0;
     isAprintFunc=false;
     StacksInit(TableStack, OffsetStack);
     return yyparse();
